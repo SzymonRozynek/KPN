@@ -62,7 +62,7 @@
 
     <div id="s-login" class="ui-screen active">
         <h1 class="text-7xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">NEON LEGENDS</h1>
-        <p class="text-gray-400 mb-8 tracking-widest text-xs">V11.0</p>
+        <p class="text-gray-400 mb-8 tracking-widest text-xs">V11.1</p>
         <div class="panel">
             <input id="nick" class="inp" placeholder="Twój Nick" maxlength="15">
             <button class="btn btn-primary" onclick="app.connect()">GRAJ</button>
@@ -161,11 +161,26 @@
                 if(t==='hit') { o.type='sawtooth'; o.frequency.setValueAtTime(100,time); g.gain.setValueAtTime(0.1,time); g.gain.linearRampToValueAtTime(0,time+0.1); o.start(); o.stop(time+0.1); }
             },
             speak(txt) {
-                if('speechSynthesis' in window) {
-                    const u = new SpeechSynthesisUtterance(txt); u.pitch = 0.8; u.rate = 1.2; window.speechSynthesis.speak(u);
-                }
+                if(!('speechSynthesis' in window)) return;
+                window.speechSynthesis.cancel();
+
+                const u = new SpeechSynthesisUtterance(txt);
+                const voices = window.speechSynthesis.getVoices();
+                
+                const voice = voices.find(v => v.name.includes('Google US English')) || 
+                              voices.find(v => v.name.includes('Zira')) || 
+                              voices.find(v => v.lang.startsWith('en')) || 
+                              voices[0];
+                
+                if(voice) u.voice = voice;
+                u.pitch = 1.0; 
+                u.rate = 1.0;  
+                u.volume = 1.0;
+                window.speechSynthesis.speak(u);
             }
         };
+        // Chrome hack to load voices
+        if('speechSynthesis' in window) window.speechSynthesis.getVoices();
 
         class FloatText {
             constructor(x, y, txt, col) { this.x=x; this.y=y; this.txt=txt; this.col=col; this.life=1.0; }

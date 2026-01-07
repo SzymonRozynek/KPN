@@ -1,7 +1,7 @@
 
 /**
  * NEON KPN LEGENDS - SERVER CORE
- * v11.0.0 (New Powers, Stealth, Magnet)
+ * v11.1.0 (Audio Fix)
  */
 
 const express = require('express');
@@ -35,7 +35,7 @@ const CFG = {
         speed: { n: 'Nitro', d: '+20% Speed' }
     },
     R_ZONE: 150,
-    MAGNET_RANGE: 100 // Zasięg przyciągania kulek
+    MAGNET_RANGE: 100 
 };
 
 const BEATS = { 'rock': 'scissors', 'paper': 'rock', 'scissors': 'paper' };
@@ -67,7 +67,7 @@ class Entity {
         this.dx = 0; this.dy = 0;
         this.hp = 100; this.maxHp = 100;
         this.dead = false; this.stun = 0;
-        this.invisible = false; // Nowa flaga
+        this.invisible = false; 
         this.buffs = { shield: false, speed: 0 };
     }
     move(w, h) {
@@ -78,7 +78,7 @@ class Entity {
     takeDamage(amt, source) {
         if(this.buffs.shield) { this.buffs.shield = false; return false; }
         if(this.type === 'rock' && source && source instanceof Entity) {
-            source.hp -= amt * 0.3; // Thorns buffed
+            source.hp -= amt * 0.3; 
         }
         this.hp -= amt;
         if(this.hp <= 0) this.dead = true;
@@ -114,7 +114,6 @@ class Player extends Entity {
     update(room) {
         if(!this.active || this.dead) return;
         
-        // Handle Stun
         if(this.stun > 0) { 
             this.stun--; this.x+=this.dx; this.y+=this.dy; 
             this.dx*=0.85; this.dy*=0.85; 
@@ -122,41 +121,27 @@ class Player extends Entity {
             return; 
         }
         
-        // Handle Invisibility Timer
         if(this.invisible && this.skillActive <= 0) this.invisible = false;
         if(this.skillActive > 0) this.skillActive--;
 
-        // Passive Regen (Paper)
         if(this.type === 'paper' && this.hp < this.maxHp && room.ticks % 30 === 0) this.hp += 3;
 
         const s = CFG.STATS[this.type];
         let spd = s.spd;
         if(this.perks.includes('speed')) spd *= 1.2;
         if(this.perks.includes('tank')) spd *= 0.9;
-        if(this.invisible) spd *= 1.3; // Speed boost while invi
+        if(this.invisible) spd *= 1.3; 
 
         if(this.input.d && this.cdDash <= 0) { this.cdDash = 60; spd = s.dash; }
         if(this.cdDash > 0) this.cdDash--;
 
-        // --- SUPERMOCE ---
         if(this.input.s && this.cdSkill <= 0) {
             this.cdSkill = this.maxCdSkill; 
             io.to(room.id).emit('fx', {t:'skill', x:this.x, y:this.y, c:this.type});
             
-            if(this.type === 'rock') {
-                // Gravity Slam: Pull enemies IN then Stun
-                room.aoe(this, 350, 'pull_stun'); 
-            }
-            if(this.type === 'paper') {
-                // Ghost Walk: Invi + Clone
-                this.skillActive = s.skillDur;
-                this.invisible = true;
-                room.spawnDecoy(this);
-            }
-            if(this.type === 'scissors') {
-                // Blood Nova: Damage + Heal
-                room.aoe(this, 200, 'lifesteal');
-            }
+            if(this.type === 'rock') room.aoe(this, 350, 'pull_stun'); 
+            if(this.type === 'paper') { this.skillActive = s.skillDur; this.invisible = true; room.spawnDecoy(this); }
+            if(this.type === 'scissors') room.aoe(this, 200, 'lifesteal');
         }
         if(this.cdSkill > 0) this.cdSkill--;
 
@@ -189,7 +174,7 @@ class Minion extends Entity {
         let target = null, minDist = 9999;
         let sepX=0, sepY=0, neighbors=0;
         for(const t of nearby) {
-            if(t.id === this.id || t.dead || t.invisible) continue; // Ignoruj niewidzialnych
+            if(t.id === this.id || t.dead || t.invisible) continue;
             const d = Math.hypot(t.x - this.x, t.y - this.y);
             if(d < 50) { sepX += (this.x-t.x)/d; sepY += (this.y-t.y)/d; neighbors++; }
             if(BEATS[this.type] === t.type && d < minDist) { minDist = d; target = t; }
@@ -288,7 +273,6 @@ class Room {
                 const o = this.orbs[i];
                 const d = Math.hypot(p.x - o.x, p.y - o.y);
                 if(d < CFG.MAGNET_RANGE) {
-                    // Pull
                     o.x += (p.x - o.x) * 0.2; o.y += (p.y - o.y) * 0.2;
                     if(d < p.r + 10) {
                         p.score += 10; p.addXp(15); this.orbs.splice(i, 1);
@@ -332,7 +316,6 @@ class Room {
             const force = 20; 
             loser.dx = Math.cos(angle) * force; loser.dy = Math.sin(angle) * force; loser.stun = 6; 
             winner.dx -= Math.cos(angle) * (force * 0.5); winner.dy -= Math.sin(angle) * (force * 0.5);
-            // Break invisibility on damage taken/dealt
             if(winner instanceof Player) winner.invisible = false;
             if(loser instanceof Player) loser.invisible = false;
         }
@@ -366,7 +349,6 @@ class Room {
             if(Math.hypot(t.x - owner.x, t.y - owner.y) < r) {
                 if(effect === 'pull_stun' && t.type !== owner.type) {
                     t.stun = 60; // 2s stun
-                    // Pull effect
                     const a = Math.atan2(owner.y - t.y, owner.x - t.x);
                     t.dx += Math.cos(a) * 30; t.dy += Math.sin(a) * 30;
                 }
