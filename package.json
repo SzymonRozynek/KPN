@@ -1,7 +1,7 @@
 {
-  "name": "neon-kpn-v3",
-  "version": "3.0.0",
-  "description": "Neon KPN - Chat & Haptics Update",
+  "name": "neon-kpn-legends",
+  "version": "11.0.0",
+  "description": "Neon KPN - Legends Edition (New Skills & Magnet)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

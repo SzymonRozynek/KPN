@@ -3,453 +3,329 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon KPN v3.0</title>
+    <title>Neon KPN: LEGENDS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-        body { background: #050505; color: white; font-family: 'Orbitron', sans-serif; overflow: hidden; touch-action: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;900&display=swap');
+        body { background: #050508; color: #eee; font-family: 'Rajdhani', sans-serif; overflow: hidden; touch-action: none; user-select: none; }
         canvas { display: block; width: 100%; height: 100%; }
-        .glass { background: rgba(20,20,30,0.85); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 20px rgba(0,0,0,0.7); }
-        .screen { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.3s; pointer-events: none; }
-        .screen.active { opacity: 1; pointer-events: auto; }
-        .screen.hidden { opacity: 0; }
-        #scr-lobby.active { pointer-events: none; }
-        #scr-lobby .interactive { pointer-events: auto; }
-        .t-btn { transition: 0.2s; filter: grayscale(1); transform: scale(0.9); border: 2px solid transparent; }
-        .t-btn.sel { filter: grayscale(0); transform: scale(1.1); border-color: white; box-shadow: 0 0 15px currentColor; }
         
-        /* Mobile Controls UI v3 */
-        #dash-btn { position: absolute; bottom: 30px; right: 30px; width: 90px; height: 90px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; font-size: 32px; background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); z-index: 50; display: none; box-shadow: 0 0 15px rgba(255,255,255,0.2); transition: transform 0.1s; }
-        #dash-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
+        .ui-screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; opacity: 0; pointer-events: none; transition: 0.3s; background: rgba(5,5,8,0.95); }
+        .ui-screen.active { opacity: 1; pointer-events: auto; }
+        .panel { background: rgba(20,20,30,0.6); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px); padding: 2rem; border-radius: 1rem; box-shadow: 0 0 30px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center; }
+        .inp { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid #444; padding: 12px; color: white; border-radius: 8px; margin-bottom: 10px; outline: none; transition: 0.2s; font-family: inherit; font-size: 1.1rem; }
+        .inp:focus { border-color: #0ff; box-shadow: 0 0 10px rgba(0,255,255,0.2); }
+        .btn { width: 100%; padding: 12px; font-weight: 700; border-radius: 8px; border: none; cursor: pointer; transition: 0.2s; letter-spacing: 1px; font-size: 1.1rem; margin-top: 5px; }
+        .btn-primary { background: linear-gradient(135deg, #00c6ff, #0072ff); color: white; box-shadow: 0 4px 15px rgba(0,114,255,0.3); }
+        .btn-sec { background: transparent; color: #888; margin-top: 10px; }
+        .btn-sec:hover { color: white; }
+
+        .room-item { display: flex; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .room-item:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+        .class-card { width: 90px; height: 120px; background: rgba(0,0,0,0.3); border: 2px solid #333; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; margin: 0 10px; }
+        .class-card.sel { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.2); }
         
-        #chat-btn { position: absolute; top: 70px; left: 10px; width: 40px; height: 40px; border-radius: 8px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3); display: none; justify-content: center; align-items: center; font-size: 20px; z-index: 50; pointer-events: auto; }
+        #hud { position: absolute; inset: 0; pointer-events: none; display: none; }
+        .hud-bar-c { position: absolute; left: 50%; transform: translateX(-50%); width: 300px; height: 8px; background: #222; border-radius: 4px; overflow: hidden; border: 1px solid #444; }
+        #bar-hp-c { bottom: 60px; } #bar-xp-c { bottom: 45px; height: 4px; width: 250px; }
+        .fill { height: 100%; width: 100%; transition: width 0.2s ease-out; }
         
-        #btn-fs { position: fixed; top: 10px; left: 10px; z-index: 9999; width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; border: 1px solid rgba(255,255,255,0.3); cursor: pointer; pointer-events: auto; }
-        #kill-feed { position: absolute; top: 60px; right: 20px; text-align: right; pointer-events: none; z-index: 20; }
-        .kill-msg { background: linear-gradient(90deg, transparent, rgba(0,0,0,0.8)); color: #fff; padding: 4px 10px; margin-bottom: 2px; font-size: 12px; border-right: 3px solid; animation: fadeOut 4s forwards; }
-        #joystick-zone { position: absolute; bottom: 30px; left: 30px; width: 140px; height: 140px; z-index: 50; display: none; pointer-events: auto; }
-        .perf-mon { position: absolute; top: 10px; right: 10px; font-family: monospace; font-size: 10px; color: #0f0; text-align: right; pointer-events: none; }
+        .touch-zone { position: absolute; bottom: 40px; width: 140px; height: 140px; pointer-events: auto; }
+        #touch-l { left: 40px; } 
+        #touch-r { right: 40px; display: flex; gap: 10px; align-items: flex-end; justify-content: flex-end; }
+        .skill-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; transition: 0.1s; position: relative; }
         
-        /* Chat Input Style */
-        #chat-input-wrap { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); width: 300px; display: none; z-index: 100; }
-        #chat-input { width: 100%; background: rgba(0,0,0,0.8); border: 2px solid #3b82f6; color: white; padding: 10px; border-radius: 8px; outline: none; font-family: 'Orbitron'; text-align: center; box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+        @media (pointer: fine) { .touch-zone { display: none !important; } }
+        @keyframes blink-anim { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.1); box-shadow: 0 0 20px #ffd700; } 100% { opacity: 1; transform: scale(1); } }
+        .skill-ready { animation: blink-anim 1.5s infinite; border-color: #ffd700 !important; color: #ffd700 !important; background: rgba(255, 215, 0, 0.2) !important; }
+        .skill-cd { opacity: 0.5; cursor: not-allowed; }
         
-        @keyframes fadeOut { 0% {opacity:0; transform:translateX(20px);} 10% {opacity:1; transform:translateX(0);} 80% {opacity:1;} 100% {opacity:0;} }
-        @media (hover: none) and (pointer: coarse) { #dash-btn, #chat-btn { display: flex; } #joystick-zone { display: block !important; } }
+        #perk-ui { position: absolute; top: 20%; width: 100%; text-align: center; pointer-events: auto; display: none; }
+        .perk-opt { display: inline-block; background: #1a1a2e; border: 1px solid #0ff; padding: 20px; margin: 10px; width: 160px; border-radius: 10px; cursor: pointer; transition: 0.2s; box-shadow: 0 0 15px rgba(0,255,255,0.1); }
+        .perk-opt:hover { transform: translateY(-5px); box-shadow: 0 0 25px rgba(0,255,255,0.3); background: #232342; }
+        
+        #announcer { position: absolute; top: 30%; width: 100%; text-align: center; pointer-events: none; font-size: 3rem; font-weight: 900; text-transform: uppercase; text-shadow: 0 0 20px black; opacity: 0; transition: 0.3s; transform: scale(0.5); }
+        .announce-anim { animation: popIn 2s forwards; }
+        @keyframes popIn { 0% { opacity:0; transform:scale(0.5); } 20% { opacity:1; transform:scale(1.2); } 80% { opacity:1; transform:scale(1); } 100% { opacity:0; transform:scale(1.5); } }
+
+        #minimap-c { position: absolute; z-index: 5; background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 50%; overflow: hidden; pointer-events: none; }
+        @media (min-width: 768px) { #minimap-c { bottom: 20px; right: 20px; width: 150px; height: 150px; } }
+        @media (max-width: 767px) { #minimap-c { top: 60px; left: 10px; width: 100px; height: 100px; } }
+
+        .toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,0,0,0.8); padding: 10px 20px; border-radius: 20px; font-weight: bold; animation: fadeUp 3s forwards; }
+        @keyframes fadeUp { 0% {opacity:0; transform:translate(-50%, 20px);} 10% {opacity:1; transform:translate(-50%, 0);} 80% {opacity:1;} 100% {opacity:0;} }
     </style>
 </head>
 <body>
-    <div id="btn-fs" onclick="toggleFS()">⛶</div>
-    <div id="chat-btn" onclick="toggleChat(true)">💬</div>
-    <div class="perf-mon">FPS: <span id="mon-fps">0</span> | PING: <span id="mon-ping">0</span>ms</div>
-    <div id="kill-feed"></div>
+    <div id="toasts"></div>
+    <div id="announcer"></div>
 
-    <div id="chat-input-wrap">
-        <input id="chat-input" type="text" maxlength="40" placeholder="Napisz wiadomość..." onblur="toggleChat(false)">
-    </div>
-
-    <div id="scr-login" class="screen active">
-        <h1 class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-blue-500 to-green-500 mb-2">NEON KPN</h1>
-        <p class="text-sm tracking-[0.5em] text-gray-400 mb-8">v3.0 CHAT & HAPTICS</p>
-        <div class="glass p-8 rounded-xl w-full max-w-sm flex flex-col gap-5 border-t border-blue-500/30">
-            <input id="inp-nick" type="text" placeholder="TWÓJ NICK" class="bg-black/50 border border-gray-600 text-white text-center p-3 rounded w-full outline-none focus:border-blue-500">
-            <button onclick="getRooms()" class="bg-gradient-to-r from-blue-700 to-blue-500 hover:from-blue-600 hover:to-blue-400 py-3 rounded font-bold transition transform hover:scale-105 shadow-lg">SZUKAJ GRY</button>
+    <div id="s-login" class="ui-screen active">
+        <h1 class="text-7xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">NEON LEGENDS</h1>
+        <p class="text-gray-400 mb-8 tracking-widest text-xs">V11.0</p>
+        <div class="panel">
+            <input id="nick" class="inp" placeholder="Twój Nick" maxlength="15">
+            <button class="btn btn-primary" onclick="app.connect()">GRAJ</button>
+            <button class="btn btn-sec" onclick="app.screen('s-manual')">JAK GRAĆ?</button>
         </div>
     </div>
 
-    <div id="scr-rooms" class="screen hidden">
-        <h2 class="text-3xl mb-6 font-bold text-blue-200 uppercase">Wybierz Arenę</h2>
-        <div id="list-rooms" class="flex flex-col gap-3 w-full max-w-md px-4"></div>
-        <button onclick="showScreen('scr-login')" class="mt-8 text-gray-500 hover:text-white transition">← POWRÓT</button>
+    <div id="s-manual" class="ui-screen">
+        <div class="panel" style="max-width:800px; text-align:left;">
+            <h1 class="text-3xl font-black mb-4 text-center">NOWE MOCE v11.0</h1>
+            <ul class="list-disc pl-5 my-2 text-gray-300 space-y-2">
+                <li><strong class="text-red-500">KAMIEŃ (Tank):</strong> Skill <strong>GRAWITACJA</strong> - Wciąga wszystkich wrogów w pobliżu i ogłusza ich.</li>
+                <li><strong class="text-blue-500">PAPIER (Stealth):</strong> Skill <strong>WIDMO</strong> - Stajesz się niewidzialny i zyskujesz prędkość. Zostawiasz klona.</li>
+                <li><strong class="text-green-500">NOŻYCE (Vampire):</strong> Skill <strong>KRWAWA NOVA</strong> - Wybuch ostrzy, który leczy Cię za zadane obrażenia.</li>
+            </ul>
+            <p class="mt-4 text-sm">Kulki (XP) same przylatują, gdy jesteś blisko!</p>
+            <button class="btn btn-primary mt-4" onclick="app.screen('s-login')">JAZDA!</button>
+        </div>
     </div>
 
-    <div id="scr-lobby" class="screen hidden">
-        <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none w-56 md:w-64">
-            <div class="glass p-3 rounded interactive border-l-4 border-white">
-                <div class="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Gracze w Lobby</div>
-                <div id="lobby-players" class="flex flex-col gap-1 max-h-48 overflow-y-auto pr-2"></div>
+    <div id="s-list" class="ui-screen">
+        <h2 class="text-3xl font-bold mb-6">SERWERY</h2>
+        <div class="panel" style="max-width: 500px;">
+            <div id="rooms" class="text-left mb-4 overflow-y-auto" style="max-height: 300px;"></div>
+            <button class="btn btn-primary" onclick="app.screen('s-create')">NOWY POKÓJ</button>
+            <button class="btn btn-sec" onclick="app.screen('s-login')">POWRÓT</button>
+        </div>
+    </div>
+
+    <div id="s-create" class="ui-screen">
+        <div class="panel">
+            <h2 class="text-2xl font-bold mb-4">NOWY POKÓJ</h2>
+            <input id="c-name" class="inp" placeholder="Nazwa">
+            <input id="c-pass" class="inp" placeholder="Hasło (opcjonalne)">
+            <button class="btn btn-primary" onclick="app.createRoom()">STWÓRZ</button>
+            <button class="btn btn-sec" onclick="app.screen('s-list')">ANULUJ</button>
+        </div>
+    </div>
+
+    <div id="s-lobby" class="ui-screen">
+        <div class="panel" style="max-width: 600px;">
+            <div class="flex justify-center mb-8" id="class-sel">
+                <div class="class-card" onclick="app.setType('rock')" id="c-rock"><div class="class-icon">🪨</div><div class="text-red-400 font-bold">TANK</div><div class="text-[10px]">GRAWITACJA</div></div>
+                <div class="class-card" onclick="app.setType('paper')" id="c-paper"><div class="class-icon">📄</div><div class="text-blue-400 font-bold">STEALTH</div><div class="text-[10px]">NIEWIDKA</div></div>
+                <div class="class-card" onclick="app.setType('scissors')" id="c-scissors"><div class="class-icon">✂️</div><div class="text-green-400 font-bold">VAMP</div><div class="text-[10px]">LIFESTEAL</div></div>
             </div>
-            <div class="glass p-3 rounded interactive border-l-4 border-blue-500">
-                <div id="lobby-rid" class="text-xl font-bold text-white">LOBBY</div>
-                <div id="host-controls" class="hidden mt-2 pt-2 border-t border-gray-700 flex flex-col gap-2">
-                    <div class="flex gap-1">
-                        <button onclick="setMode('play')" id="mode-hero" class="flex-1 text-[10px] py-1 bg-gray-700 rounded hover:bg-gray-600">HERO</button>
-                        <button onclick="setMode('sim')" id="mode-sim" class="flex-1 text-[10px] py-1 bg-gray-700 rounded hover:bg-gray-600">RTS</button>
-                    </div>
-                    <button onclick="hostStart()" class="w-full bg-green-600 hover:bg-green-500 py-2 rounded text-xs font-bold transition shadow-[0_0_10px_lime]">START</button>
-                </div>
-            </div>
+            <div id="host-ctrl" class="hidden"><button class="btn btn-primary" onclick="app.start()">START</button></div>
+            <div id="wait-msg" class="text-gray-400 animate-pulse mt-4">OCZEKIWANIE NA HOSTA...</div>
         </div>
+    </div>
 
-        <div class="absolute top-4 right-4 glass p-3 rounded interactive text-right border-r-4 border-yellow-500">
-            <div class="text-xs text-gray-400 uppercase tracking-widest">Tryb</div>
-            <div id="lobby-mode" class="text-xl font-bold text-yellow-400">HERO</div>
+    <div id="hud">
+        <div class="absolute top-4 left-4 text-left">
+            <div class="text-xs text-gray-400">KDA</div>
+            <div id="kda-disp" class="text-lg font-mono">0 / 0</div>
         </div>
+        <div id="leaderboard-panel" class="hidden md:block absolute top-4 right-4 w-64 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg p-2 font-mono text-xs z-10">
+            <div id="leaderboard-list"></div>
+        </div>
+        <div style="position:absolute; top:20px; left:50%; transform:translateX(-50%); text-align:center;">
+            <div id="score-disp" class="text-4xl font-bold text-yellow-400 drop-shadow-md">0</div>
+            <div id="warn-sing" class="text-purple-500 font-black text-2xl animate-ping hidden">⚠ SINGULARITY ⚠</div>
+        </div>
+        <div class="absolute bottom-[80px] left-1/2 -translate-x-1/2 text-center pointer-events-none">
+            <div class="text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-t from-purple-600 to-white drop-shadow-lg" id="lvl-disp">LVL 1</div>
+        </div>
+        <div id="bar-hp-c" class="hud-bar-c"><div id="bar-hp" class="fill bg-red-500"></div></div>
+        <div id="bar-xp-c" class="hud-bar-c"><div id="bar-xp" class="fill bg-purple-500"></div></div>
+        <div class="absolute bottom-[28px] left-1/2 -translate-x-1/2 text-[10px] text-gray-400" id="xp-text"></div>
         
-        <div class="absolute bottom-0 w-full p-6 flex flex-col items-center gap-6 pointer-events-none">
-            <div class="text-sm text-blue-200 bg-blue-900/30 border border-blue-500/30 px-4 py-2 rounded-full backdrop-blur shadow-[0_0_15px_rgba(0,255,0,0.2)] interactive">
-                WASD: Kamera | Enter: Czat | Procą (Max <span id="limit-val">3</span>)
-            </div>
-            <div class="flex gap-8 interactive">
-                <div class="t-btn w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gray-900 flex items-center justify-center text-4xl cursor-pointer text-red-500 sel shadow-xl" onclick="setType('rock', this)" style="color:#ef4444">🪨</div>
-                <div class="t-btn w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gray-900 flex items-center justify-center text-4xl cursor-pointer text-blue-500 shadow-xl" onclick="setType('paper', this)" style="color:#3b82f6">📄</div>
-                <div class="t-btn w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gray-900 flex items-center justify-center text-4xl cursor-pointer text-green-500 shadow-xl" onclick="setType('scissors', this)" style="color:#22c55e">✂️</div>
-            </div>
-            <div class="flex gap-4 w-full max-w-sm interactive">
-                <button onclick="sock.emit('clearPlans')" class="bg-red-900/40 border border-red-500/50 p-4 rounded-lg text-red-400 hover:bg-red-900 transition">✕</button>
-                <button id="btn-ready" onclick="toggleReady()" class="flex-1 bg-gray-800 border border-gray-600 p-4 rounded-lg font-bold hover:bg-gray-700 transition">GOTOWY?</button>
+        <div id="touch-l" class="touch-zone"></div>
+        <div id="touch-r" class="touch-zone">
+            <div class="skill-btn" onmousedown="app.input.d=true" onmouseup="app.input.d=false" ontouchstart="app.input.d=true" ontouchend="app.input.d=false">⚡</div>
+            <div id="btn-skill" class="skill-btn" style="border-color:#ffd700; color:#ffd700;" onmousedown="app.input.s=true" onmouseup="app.input.s=false" ontouchstart="app.input.s=true" ontouchend="app.input.s=false">
+                <span id="skill-icon">★</span><span id="skill-timer" class="text-xs font-bold absolute"></span>
             </div>
         </div>
+        <div id="perk-ui"><h2 class="text-3xl font-black text-yellow-400 drop-shadow-lg mb-4">LEVEL UP!</h2><div id="perk-list"></div></div>
+        <canvas id="minimap-c"></canvas>
     </div>
-
-    <div id="scr-game" class="screen hidden" style="pointer-events: none;">
-        <div class="absolute top-4 right-4 glass px-6 py-3 rounded-xl pointer-events-auto border-b-4 border-yellow-500">
-            <span class="text-yellow-400 font-mono text-2xl font-bold" id="score">0</span> <span class="text-xs text-gray-400">PKT</span>
-        </div>
-        <div id="win-msg" class="hidden absolute inset-0 flex items-center justify-center bg-black/90 backdrop-blur-sm z-50">
-            <h1 class="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_0_30px_rgba(255,200,0,0.6)] mb-4">ZWYCIĘSTWO</h1>
-        </div>
-    </div>
-    
-    <div id="joystick-zone"></div>
-    <div id="dash-btn" onmousedown="dash(true)" onmouseup="dash(false)" ontouchstart="dash(true)" ontouchend="dash(false)">⚡</div>
 
     <canvas id="cvs"></canvas>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+    
     <script>
-        const cvs = document.getElementById('cvs'); const ctx = cvs.getContext('2d');
-        const COLORS = { rock: '#ef4444', paper: '#3b82f6', scissors: '#22c55e' };
-        const ICONS = { rock: '🪨', paper: '📄', scissors: '✂️' };
-        const TYPE_NAMES = { rock: 'KAMIEŃ', paper: 'PAPIER', scissors: 'NOŻYCE' };
-        
-        let sock, myId, roomData = null;
-        let cam = {x:1000, y:1000}; 
-        let players = {}, minions = [], orbs = [];
-        let particles = [], shockwaves = [];
-        let state = 'login'; 
-        let myType = 'rock';
-        let keys = {w:0, a:0, s:0, d:0, sp:0};
-        let joyInput = {x:0, y:0};
-        let dragStart = null; let dragCurr = null;
-        
-        // Chat vars
-        let isChatting = false;
+        const AudioFX = {
+            ctx: new (window.AudioContext || window.webkitAudioContext)(),
+            play(t) {
+                if(this.ctx.state === 'suspended') this.ctx.resume();
+                const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                o.connect(g); g.connect(this.ctx.destination);
+                const time = this.ctx.currentTime;
+                if(t==='shoot') { o.type='square'; o.frequency.setValueAtTime(400,time); o.frequency.exponentialRampToValueAtTime(100,time+0.1); g.gain.setValueAtTime(0.1,time); g.gain.exponentialRampToValueAtTime(0.01,time+0.1); o.start(); o.stop(time+0.1); }
+                if(t==='hit') { o.type='sawtooth'; o.frequency.setValueAtTime(100,time); g.gain.setValueAtTime(0.1,time); g.gain.linearRampToValueAtTime(0,time+0.1); o.start(); o.stop(time+0.1); }
+            },
+            speak(txt) {
+                if('speechSynthesis' in window) {
+                    const u = new SpeechSynthesisUtterance(txt); u.pitch = 0.8; u.rate = 1.2; window.speechSynthesis.speak(u);
+                }
+            }
+        };
 
-        let lastPerfUpdate = 0; let frames = 0;
-        let pingInterval = null;
-
-        function resize() { cvs.width = window.innerWidth; cvs.height = window.innerHeight; }
-        window.onresize = resize; resize();
-        function toggleFS() { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else if(document.exitFullscreen) document.exitFullscreen(); }
-        
-        // Haptics Helper
-        function vibe(ms) { if(navigator.vibrate) navigator.vibrate(ms); }
-
-        // Chat Helper
-        function toggleChat(force) {
-            const wrap = document.getElementById('chat-input-wrap');
-            const inp = document.getElementById('chat-input');
-            if(force === true || (force === undefined && wrap.style.display !== 'block')) {
-                wrap.style.display = 'block'; inp.focus(); isChatting = true;
-            } else {
-                wrap.style.display = 'none'; inp.blur(); isChatting = false;
+        class FloatText {
+            constructor(x, y, txt, col) { this.x=x; this.y=y; this.txt=txt; this.col=col; this.life=1.0; }
+            draw(ctx, cx, cy) {
+                this.y -= 1; this.life -= 0.02;
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.fillStyle = this.col; ctx.font = "bold 20px Rajdhani"; ctx.strokeStyle = 'black'; ctx.lineWidth = 2;
+                ctx.strokeText(this.txt, this.x-cx, this.y-cy); ctx.fillText(this.txt, this.x-cx, this.y-cy);
+                ctx.globalAlpha = 1;
+                return this.life > 0;
             }
         }
-        
-        document.getElementById('chat-input').addEventListener('keydown', (e) => {
-            if(e.key === 'Enter') {
-                const txt = e.target.value.trim();
-                if(txt) sock.emit('chat', txt);
-                e.target.value = '';
-                toggleChat(false);
-            }
-        });
 
-        if(typeof nipplejs !== 'undefined') {
-            const manager = nipplejs.create({ zone: document.getElementById('joystick-zone'), mode: 'static', position: {left: '50%', top: '50%'}, color: 'white', size: 120 });
-            manager.on('move', (evt, data) => { if(data.vector) joyInput = {x: data.vector.x, y: -data.vector.y}; });
-            manager.on('end', () => { joyInput = {x:0, y:0}; });
-        }
-
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => { s.classList.add('hidden'); s.classList.remove('active'); });
-            document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('active');
-        }
-
-        function getRooms() {
-            const nick = document.getElementById('inp-nick').value || 'Guest';
-            sock = io();
-            sock.on('connect', () => {
-                sock.emit('getRooms');
-                if(pingInterval) clearInterval(pingInterval);
-                pingInterval = setInterval(() => {
-                    const start = Date.now();
-                    sock.emit('ping', () => { 
-                        const pingEl = document.getElementById('mon-ping');
-                        if(pingEl) pingEl.innerText = Date.now() - start; 
-                    });
-                }, 2000);
-            });
-            sock.on('roomList', list => {
-                document.getElementById('list-rooms').innerHTML = list.map(r => `<div onclick="join('${r.id}', '${nick}')" class="glass p-4 rounded cursor-pointer hover:bg-gray-800 flex justify-between items-center transition hover:border-blue-500"><span class="font-bold text-lg text-blue-100">${r.id}</span><span class="${r.status==='GRA'?'text-red-400 border border-red-900 bg-red-900/20':'text-green-400 border border-green-900 bg-green-900/20'} px-2 py-1 rounded text-xs font-bold">${r.status} (${r.count})</span></div>`).join('');
-                showScreen('scr-rooms');
-            });
-
-            sock.on('joined', d => { myId = d.id; showScreen('scr-lobby'); state = 'lobby'; setupLobbyTouch(); });
+        const app = {
+            sock: null, input: {x:0, y:0, d:false, s:false}, myId: null, state: {}, cam: {x:0, y:0, z:1.0}, mapSize: 3000, perks: {}, winScore: 1000,
+            floats: [],
             
-            // Handle Chat Messages
-            sock.on('chat', d => {
-                if(players[d.id]) {
-                    players[d.id].chat = { msg: d.msg, timer: 180 }; // ~6 seconds (30fps)
-                }
-            });
-
-            sock.on('u', d => {
-                roomData = d.st; minions = d.m; orbs = d.o;
-                const hPanel = document.getElementById('host-controls');
-                if(roomData.h === myId && state === 'lobby') hPanel.classList.remove('hidden');
-                else hPanel.classList.add('hidden');
-
-                let pListHtml = '';
-                d.p.forEach(p => {
-                    if(!players[p.id]) players[p.id] = { ...p, cx: p.x, cy: p.y, chat: null };
-                    else {
-                        const pl = players[p.id];
-                        // Smoother interpolation for v3
-                        pl.cx += (p.x - pl.cx) * 0.2; pl.cy += (p.y - pl.cy) * 0.2;
-                        pl.t = p.t; pl.s = p.s; pl.a = p.a; pl.r = p.r;
-                        pl.pl = p.pl; pl.cd = p.cd; pl.mcd = p.mcd; pl.n = p.n || "Gracz"; 
-                        // Keep chat if exists
-                        if(!pl.chat) pl.chat = null;
-                    }
-                    const isMe = p.id === myId;
-                    
-                    const readyIndicator = p.r 
-                        ? '<span class="text-green-500 font-bold mr-2 text-sm">✔</span>' 
-                        : '<span class="text-gray-600 font-bold mr-2 text-sm">•</span>';
-
-                    pListHtml += `<div class="flex items-center justify-between text-[10px] bg-white/5 p-2 rounded border-r-2 mb-1" style="border-color:${COLORS[p.t]}">
-                        <div class="flex items-center min-w-0">
-                            ${readyIndicator}
-                            <span class="${isMe?'text-yellow-400':'text-white'} truncate font-bold tracking-wider max-w-[100px]">${p.n || "Gracz"}</span>
-                        </div>
-                        <span class="text-base">${ICONS[p.t]}</span>
-                    </div>`;
+            init() {
+                this.cvs = document.getElementById('cvs'); this.ctx = this.cvs.getContext('2d');
+                this.mmCvs = document.getElementById('minimap-c'); this.mmCtx = this.mmCvs.getContext('2d');
+                window.addEventListener('resize', ()=>this.resize()); this.resize();
+                this.setupInput(); this.loop();
+            },
+            resize() {
+                this.cvs.width = window.innerWidth * window.devicePixelRatio; this.cvs.height = window.innerHeight * window.devicePixelRatio;
+                this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            },
+            connect() {
+                this.sock = io();
+                this.sock.on('roomList', list => {
+                    const el = document.getElementById('rooms'); el.innerHTML = '';
+                    list.forEach(r => el.innerHTML += `<div class="room-item" onclick="app.join('${r.id}', ${r.locked})"><span class="font-bold">${r.name} ${r.locked?'🔒':''}</span><span class="text-xs bg-white/10 px-2 rounded py-1">[${r.c}/${r.max}]</span></div>`);
+                    this.screen('s-list');
                 });
-                if(state === 'lobby') {
-                    const lobbyPlayersEl = document.getElementById('lobby-players');
-                    if(lobbyPlayersEl) lobbyPlayersEl.innerHTML = pListHtml;
-                }
-                
-                if(state === 'lobby') {
-                    const isHero = roomData.m === 'play';
-                    document.getElementById('lobby-mode').innerText = isHero ? 'HERO' : 'RTS';
-                    document.getElementById('limit-val').innerText = isHero ? '3' : '5';
-                    const me = players[myId];
-                    const btn = document.getElementById('btn-ready');
-                    if(me && me.r) { 
-                        btn.innerText = "CZEKAJ..."; 
-                        btn.className = "flex-1 bg-green-700/80 border border-green-500 text-white p-4 rounded-lg font-bold shadow-[0_0_15px_rgba(0,255,0,0.3)] transition-all"; 
-                    } else { 
-                        btn.innerText = "GOTOWY?"; 
-                        btn.className = "flex-1 bg-gray-800 border border-gray-600 p-4 rounded-lg font-bold text-white shadow-lg transition-colors hover:bg-gray-700"; 
-                    }
-                }
-
-                if(roomData.a && state !== 'game') { state = 'game'; showScreen('scr-game'); }
-                else if(!roomData.a && state === 'game') { state = 'lobby'; showScreen('scr-lobby'); document.getElementById('win-msg').classList.add('hidden'); }
-                if(players[myId]) document.getElementById('score').innerText = players[myId].s;
-            });
-
-            sock.on('fx', d => {
-                if(d.t === 'kill') { 
-                    spawnParticles(d.x, d.y, COLORS[d.c], 15); 
-                    shockwaves.push({x:d.x, y:d.y, r:0, o:1, c:COLORS[d.c]}); 
-                    if(d.msg) addKillMsg(d.msg, COLORS[d.c]);
-                    // Haptic feedback
-                    vibe(200);
-                }
-                if(d.t === 'convert') { spawnParticles(d.x, d.y, COLORS[d.c], 10); shockwaves.push({x:d.x, y:d.y, r:0, o:1, c:COLORS[d.c]}); }
-                if(d.t === 'orb') spawnParticles(d.x, d.y, '#ffd700', 5);
-            });
-        }
-
-        function addKillMsg(msg, col) {
-            const feed = document.getElementById('kill-feed');
-            const el = document.createElement('div'); el.className = "kill-msg"; el.innerText = msg; el.style.borderRightColor = col;
-            feed.appendChild(el); setTimeout(() => el.remove(), 4000);
-        }
-
-        function join(rid, nick) { sock.emit('join', {roomId: rid, nick}); }
-        function setType(t, el) { myType = t; document.querySelectorAll('.t-btn').forEach(b => b.classList.remove('sel')); el.classList.add('sel'); sock.emit('setType', t); }
-        function toggleReady() { sock.emit('toggleReady'); }
-        function setMode(m) { sock.emit('setMode', m); }
-        function hostStart() { sock.emit('hostStart'); }
-
-        function setupLobbyTouch() {
-            cvs.onmousedown = (e) => startDrag(e.clientX, e.clientY);
-            window.onmousemove = (e) => moveDrag(e.clientX, e.clientY);
-            window.onmouseup = (e) => endDrag();
-            cvs.ontouchstart = (e) => { e.preventDefault(); startDrag(e.touches[0].clientX, e.touches[0].clientY); };
-            cvs.ontouchmove = (e) => { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); };
-            cvs.ontouchend = (e) => { e.preventDefault(); endDrag(); };
-        }
-
-        function startDrag(cx, cy) {
-            if(state !== 'lobby') return;
-            dragStart = { 
-                x: cx + cam.x - window.innerWidth/2, 
-                y: cy + cam.y - window.innerHeight/2 
-            };
-            dragCurr = { ...dragStart };
-        }
-        function moveDrag(cx, cy) {
-            if(!dragStart || state !== 'lobby') return;
-            dragCurr = { 
-                x: cx + cam.x - window.innerWidth/2, 
-                y: cy + cam.y - window.innerHeight/2 
-            };
-        }
-        function endDrag() {
-            if(!dragStart || state !== 'lobby') return;
-            const dx = dragStart.x - dragCurr.x; const dy = dragStart.y - dragCurr.y;
-            if (Math.hypot(dx, dy) > 30) {
-                 const powerX = dx * 0.12; const powerY = dy * 0.12; 
-                 sock.emit('planMinion', { x: dragStart.x, y: dragStart.y, dx: powerX, dy: powerY });
-            }
-            dragStart = null; dragCurr = null;
-        }
-
-        window.onkeydown = e => { 
-            if(isChatting) return; // Disable movement keys when typing
-            if(e.key==='w')keys.w=1; if(e.key==='a')keys.a=1; if(e.key==='s')keys.s=1; if(e.key==='d')keys.d=1; 
-            if(e.code==='Space')keys.sp=true; 
-            if(e.key === 'Enter') toggleChat();
-        }
-        window.onkeyup = e => { 
-            if(e.key==='w')keys.w=0; if(e.key==='a')keys.a=0; if(e.key==='s')keys.s=0; if(e.key==='d')keys.d=0; 
-            if(e.code==='Space')keys.sp=false; 
-        }
-        function dash(on) { keys.sp = on; if(on) vibe(50); }
-
-        function loop() {
-            frames++;
-            const now = Date.now();
-            if(now - lastPerfUpdate >= 1000) { document.getElementById('mon-fps').innerText = frames; frames = 0; lastPerfUpdate = now; }
-
-            requestAnimationFrame(loop);
-            const me = players[myId];
-            let dx = 0, dy = 0;
-            if(!isChatting) {
-                if(keys.w) dy-=1; if(keys.s) dy+=1; if(keys.a) dx-=1; if(keys.d) dx+=1;
-            }
-            if(joyInput.x !== 0 || joyInput.y !== 0) { dx = joyInput.x; dy = joyInput.y; }
-
-            if(state === 'game' && me && me.a) {
-                sock.emit('input', {x:dx, y:dy, d:keys.sp}); keys.sp = false; 
-                me.cx += dx * 7; me.cy += dy * 7; 
-                cam.x += (me.cx - cam.x) * 0.1; cam.y += (me.cy - cam.y) * 0.1;
-            } else {
-                const camSpeed = 15; cam.x += dx * camSpeed; cam.y += dy * camSpeed;
-                cam.x = Math.max(0, Math.min(2000, cam.x)); cam.y = Math.max(0, Math.min(2000, cam.y));
-            }
-
-            ctx.fillStyle = '#050510'; ctx.fillRect(0,0,cvs.width,cvs.height);
-            ctx.save(); ctx.translate(-cam.x + window.innerWidth/2, -cam.y + window.innerHeight/2);
-            
-            const gridSize = 100; ctx.beginPath();
-            for(let x=0; x<=2000; x+=gridSize) { ctx.moveTo(x,0); ctx.lineTo(x,2000); }
-            for(let y=0; y<=2000; y+=gridSize) { ctx.moveTo(0,y); ctx.lineTo(2000,y); }
-            ctx.strokeStyle = 'rgba(50,50,100,0.2)'; ctx.lineWidth=2; ctx.stroke();
-            ctx.shadowBlur=20; ctx.shadowColor='#00ffff'; ctx.strokeStyle='#00ffff'; ctx.lineWidth=5; ctx.strokeRect(0,0,2000,2000); ctx.shadowBlur=0;
-
-            // Drawing plans (lobby)
-            Object.values(players).forEach(p => {
-                if(p.pl) p.pl.forEach(plan => {
-                    if(!p.n || p.n === "undefined" || plan.t === undefined) return;
-                    const isMyPlan = p.id === myId;
-                    ctx.globalAlpha= isMyPlan ? 0.7 : 0.3; 
-                    ctx.beginPath(); ctx.arc(plan.x, plan.y, 22, 0, Math.PI*2); ctx.fillStyle=COLORS[plan.t]; ctx.fill();
-                    ctx.fillStyle='#fff'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; 
-                    ctx.fillText(ICONS[plan.t], plan.x, plan.y+5);
-                    
-                    ctx.font='bold 11px Orbitron'; ctx.fillStyle='#fff';
-                    ctx.shadowColor='black'; ctx.shadowBlur=6;
-                    ctx.fillText(`${p.n.toUpperCase()} (${TYPE_NAMES[plan.t]})`, plan.x, plan.y - 35);
-                    ctx.shadowBlur=0;
-
-                    if (plan.dx && plan.dy && isMyPlan) {
-                        ctx.beginPath(); ctx.moveTo(plan.x, plan.y); ctx.lineTo(plan.x+plan.dx*12, plan.y+plan.dy*12);
-                        ctx.strokeStyle=COLORS[plan.t]; ctx.lineWidth=3; ctx.stroke();
-                    }
-                    ctx.globalAlpha=1;
+                this.sock.on('roomCreated', id => this.join(id, false));
+                this.sock.on('err', msg => this.toast(msg));
+                this.sock.on('joined', d => {
+                    this.myId = d.id; this.mapSize = d.w; this.perks = d.perks; this.winScore = d.winScore;
+                    this.screen('s-lobby'); if(d.host) { document.getElementById('host-ctrl').classList.remove('hidden'); document.getElementById('wait-msg').classList.add('hidden'); }
                 });
-            });
+                this.sock.on('gameStart', () => this.screen('hud'));
+                this.sock.on('gameOver', d => {
+                    let msg = "WYGRAŁ: " + d.w.toUpperCase(); if(d.reason === 'score') msg = "ZWYCIĘSTWO: " + d.w.toUpperCase();
+                    this.announce("GAME OVER"); this.toast(msg); setTimeout(() => this.screen('s-lobby'), 5000);
+                });
+                this.sock.on('u', p => {
+                    this.state = p;
+                    const me = p.p.find(x => x.id === this.myId);
+                    
+                    const lb = document.getElementById('leaderboard-list');
+                    lb.innerHTML = p.p.filter(x => x.a).sort((a,b)=>b.score-a.score).slice(0,5).map(pl=>`<div class="flex justify-between ${pl.id===this.myId?'text-yellow-400 font-bold':''}"><span>${pl.n}</span><span>${pl.score}</span></div>`).join('');
 
-            if(dragStart && dragCurr && state === 'lobby') {
-                const dx = dragStart.x - dragCurr.x, dy = dragStart.y - dragCurr.y, dist = Math.hypot(dx, dy), col = COLORS[myType];
-                ctx.beginPath(); ctx.moveTo(dragStart.x, dragStart.y); ctx.lineTo(dragCurr.x, dragCurr.y); ctx.strokeStyle=`rgba(255,255,255,0.4)`; ctx.setLineDash([5,5]); ctx.lineWidth=2; ctx.stroke(); ctx.setLineDash([]);
-                if (dist > 30) {
-                    const endX = dragStart.x + dx, endY = dragStart.y + dy;
-                    ctx.beginPath(); ctx.moveTo(dragStart.x, dragStart.y); ctx.lineTo(endX, endY);
-                    ctx.strokeStyle=col; ctx.lineWidth=4; ctx.shadowBlur=10; ctx.shadowColor=col; ctx.stroke();
-                    ctx.beginPath(); ctx.arc(dragStart.x, dragStart.y, 8, 0, Math.PI*2); ctx.fillStyle=col; ctx.fill();
-                    ctx.shadowBlur=0;
-                }
-            }
+                    if(me) {
+                        this.cam.x += (me.x - this.cam.x) * 0.1; this.cam.y += (me.y - this.cam.y) * 0.1;
+                        // Dynamic Zoom
+                        const speed = Math.hypot(me.x - this.cam.x, me.y - this.cam.y);
+                        const targetZ = speed > 50 ? 0.8 : 1.0;
+                        this.cam.z += (targetZ - this.cam.z) * 0.05;
 
-            for (let i=shockwaves.length-1; i>=0; i--) {
-                const s = shockwaves[i]; s.r += 3; s.o -= 0.05;
-                if(s.o <= 0) { shockwaves.splice(i,1); continue; }
-                ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.strokeStyle=s.c; ctx.lineWidth=4; ctx.globalAlpha=s.o; ctx.stroke(); ctx.globalAlpha=1;
-            }
-
-            orbs.forEach(o => { ctx.fillStyle='#ffd700'; ctx.shadowBlur=15; ctx.shadowColor='#ffd700'; ctx.beginPath(); ctx.arc(o[0], o[1], 6, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur=0; });
-            minions.forEach(m => drawEntity(m.x, m.y, 22, m.t, null));
-            Object.values(players).forEach(p => { 
-                // Draw Chat Bubble
-                if(p.chat) {
-                    p.chat.timer--;
-                    if(p.chat.timer <= 0) p.chat = null;
-                    else {
-                        ctx.font = '14px Orbitron';
-                        const w = ctx.measureText(p.chat.msg).width + 20;
-                        const bx = p.cx, by = p.cy - 60;
-                        ctx.fillStyle = 'rgba(255,255,255,0.9)';
-                        ctx.beginPath(); ctx.roundRect(bx - w/2, by - 15, w, 30, 10); ctx.fill();
-                        ctx.fillStyle = 'black'; ctx.textAlign = 'center'; ctx.fillText(p.chat.msg, bx, by+5);
-                        
-                        // Triangle
-                        ctx.beginPath(); ctx.moveTo(bx, by+15); ctx.lineTo(bx-5, by+22); ctx.lineTo(bx+5, by+22); ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.fill();
+                        if(me.a) {
+                            document.getElementById('bar-hp').style.width = (me.hp/me.mhp)*100 + '%';
+                            document.getElementById('bar-xp').style.width = (me.xp/me.nxp)*100 + '%';
+                            document.getElementById('score-disp').innerText = me.score + " / " + this.winScore;
+                            document.getElementById('lvl-disp').innerText = "LVL " + me.lvl;
+                            document.getElementById('kda-disp').innerText = `${me.kills} / ${me.deaths}`;
+                            document.getElementById('xp-text').innerText = `${me.xp} / ${me.nxp} XP`;
+                            if(me.pen) this.showPerks(); else document.getElementById('perk-ui').style.display = 'none';
+                            
+                            const btn = document.getElementById('btn-skill'), timer = document.getElementById('skill-timer'), icon = document.getElementById('skill-icon');
+                            if(me.scd <= 0) { btn.classList.add('skill-ready'); btn.classList.remove('skill-cd'); timer.innerText = ""; icon.style.opacity = 1; }
+                            else { btn.classList.remove('skill-ready'); btn.classList.add('skill-cd'); timer.innerText = Math.ceil(me.scd/30); icon.style.opacity = 0; }
+                        }
                     }
-                }
+                    if(p.st.s > 0) document.getElementById('warn-sing').classList.remove('hidden');
+                });
+                this.sock.on('fx', d => {
+                    if(d.t === 'skill') AudioFX.play('shoot');
+                    if(d.t === 'kill') { AudioFX.play('hit'); this.toast(d.msg); }
+                    if(d.t === 'dmg') this.floats.push(new FloatText(d.x, d.y, d.v, d.c));
+                    if(d.t === 'streak') this.announce(d.k > 4 ? "GODLIKE!" : (d.k > 2 ? "RAMPAGE!" : "DOUBLE KILL!"));
+                });
+                this.sock.emit('getRooms');
+            },
+            join(id, locked) { const pass = locked ? prompt("Hasło:") : ""; this.sock.emit('join', { roomId: id, nick: document.getElementById('nick').value, pass }); },
+            createRoom() { const n = document.getElementById('c-name').value; const p = document.getElementById('c-pass').value; if(n) this.sock.emit('createRoom', { name:n, pass:p }); },
+            screen(id) { document.querySelectorAll('.ui-screen').forEach(e=>e.classList.remove('active')); const el=document.getElementById(id); if(el)el.classList.add('active'); const h=document.getElementById('hud'); if(id==='hud')h.style.display='block'; else h.style.display='none'; },
+            setType(t) { document.querySelectorAll('.class-card').forEach(e=>e.classList.remove('sel')); document.getElementById('c-'+t).classList.add('sel'); this.sock.emit('setType', t); },
+            start() { this.sock.emit('hostStart'); },
+            showPerks() {
+                const el = document.getElementById('perk-ui'); if(el.style.display==='block')return; el.style.display='block';
+                const l = document.getElementById('perk-list'); l.innerHTML = '';
+                for(let k in this.perks) l.innerHTML += `<div class="perk-opt" onclick="app.pickPerk('${k}')"><div class="font-bold text-cyan-300">${this.perks[k].n}</div><div class="text-xs text-gray-400 mt-2">${this.perks[k].d}</div></div>`;
+            },
+            pickPerk(pid) { this.sock.emit('perk', pid); document.getElementById('perk-ui').style.display='none'; },
+            toast(msg) { const t = document.createElement('div'); t.className='toast'; t.innerText=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 3000); },
+            announce(txt) {
+                const el = document.getElementById('announcer'); el.innerText = txt; el.classList.remove('announce-anim'); void el.offsetWidth; el.classList.add('announce-anim');
+                el.style.color = ['#f00', '#ff0', '#0ff', '#f0f'][Math.floor(Math.random()*4)];
+                AudioFX.speak(txt);
+            },
+            setupInput() {
+                window.onkeydown = e => { if(e.key==='w')this.input.y=-1; if(e.key==='s')this.input.y=1; if(e.key==='a')this.input.x=-1; if(e.key==='d')this.input.x=1; if(e.code==='Space')this.input.d=true; if(e.key==='e')this.input.s=true; };
+                window.onkeyup = e => { if(e.key==='w'||e.key==='s')this.input.y=0; if(e.key==='a'||e.key==='d')this.input.x=0; if(e.code==='Space')this.input.d=false; if(e.key==='e')this.input.s=false; };
+                const mgr = nipplejs.create({ zone: document.getElementById('touch-l'), mode: 'static', position: {left: '50%', top: '50%'}, color: 'white' });
+                mgr.on('move', (e, d) => { if(d.vector) { this.input.x = d.vector.x; this.input.y = -d.vector.y; } });
+                mgr.on('end', () => { this.input.x = 0; this.input.y = 0; });
+            },
+            loop() { requestAnimationFrame(()=>this.loop()); if(this.sock) this.sock.emit('input', {x:this.input.x, y:this.input.y, d:this.input.d, s:this.input.s}); this.render(); },
+            render() {
+                const w = window.innerWidth, h = window.innerHeight;
+                this.ctx.fillStyle = '#0a0a12'; this.ctx.fillRect(0,0,w,h);
+                if(!this.state || !this.state.p) return;
                 
-                if(p.a) drawEntity(p.cx, p.cy, 30, p.t, p.n, p); 
-            });
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i]; p.x += p.dx; p.y += p.dy; p.l -= 0.05;
-                if (p.l <= 0) { particles.splice(i, 1); continue; }
-                ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c;
-                ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0, p.l * 5), 0, Math.PI * 2); ctx.fill();
-            }
-            ctx.globalAlpha = 1; ctx.restore();
-        }
-        loop();
+                this.ctx.save();
+                this.ctx.translate(w/2, h/2);
+                this.ctx.scale(this.cam.z, this.cam.z);
+                this.ctx.translate(-this.cam.x, -this.cam.y);
+                
+                // Parallax Grid
+                this.ctx.strokeStyle = '#1a1a2e'; this.ctx.lineWidth = 2; this.ctx.beginPath();
+                for(let i=0; i<=this.mapSize; i+=250) { this.ctx.moveTo(i,0); this.ctx.lineTo(i,this.mapSize); this.ctx.moveTo(0,i); this.ctx.lineTo(this.mapSize,i); }
+                this.ctx.stroke();
 
-        function drawEntity(x, y, r, t, nick, pObj=null) {
-            const col = COLORS[t]; ctx.shadowBlur=20; ctx.shadowColor=col;
-            ctx.fillStyle=col; ctx.globalAlpha=0.2; ctx.beginPath(); ctx.arc(x,y,r+5,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
-            ctx.fillStyle='#111'; ctx.strokeStyle=col; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
-            ctx.fillStyle='#fff'; ctx.font=(r*0.8)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(ICONS[t],x,y);
-            if(pObj && pObj.mcd > 0) {
-                const pct = Math.max(0, 1-(pObj.cd/pObj.mcd)), barW=50; ctx.fillStyle='#333'; ctx.fillRect(x-barW/2, y+r+8, barW, 4);
-                ctx.fillStyle=pct===1?'#00ff00':'#ffff00'; ctx.fillRect(x-barW/2, y+r+8, barW*pct, 4);
+                if(this.state.z) this.state.z.forEach(z => { this.ctx.fillStyle = z.t==='rock'?'#f00':(z.t==='paper'?'#00f':'#0f0'); this.ctx.globalAlpha=0.1; this.ctx.beginPath(); this.ctx.arc(z.x,z.y,150,0,Math.PI*2); this.ctx.fill(); this.ctx.globalAlpha=1; });
+                this.state.o.forEach(o => { this.ctx.fillStyle='#ffd700'; this.ctx.shadowColor='#ffd700'; this.ctx.shadowBlur=10; this.ctx.beginPath(); this.ctx.arc(o[0],o[1],5,0,Math.PI*2); this.ctx.fill(); this.ctx.shadowBlur=0; });
+
+                const drawUnit = (x,y,t,r,inv) => {
+                    const c = t==='rock'?'#ef4444':(t==='paper'?'#3b82f6':'#22c55e');
+                    this.ctx.fillStyle=c; this.ctx.shadowColor=c; this.ctx.shadowBlur=15; 
+                    if(inv) this.ctx.globalAlpha = 0.3; // Local view of invisible self
+                    this.ctx.beginPath(); this.ctx.arc(x,y,r,0,Math.PI*2); this.ctx.fill(); 
+                    this.ctx.globalAlpha = 1; this.ctx.shadowBlur=0;
+                    this.ctx.fillStyle='#fff'; this.ctx.font=`${r}px Arial`; this.ctx.textAlign='center'; this.ctx.textBaseline='middle'; this.ctx.fillText(t==='rock'?'🪨':(t==='paper'?'📄':'✂️'),x,y);
+                };
+                this.state.m.forEach(m => drawUnit(m.x, m.y, m.t, 18, false));
+                this.state.p.forEach(p => { 
+                    if(!p.a||p.d) return; 
+                    if(p.inv && p.id !== this.myId) return; // Don't draw invisible enemies
+                    drawUnit(p.x,p.y,p.t,28, p.inv); 
+                    this.ctx.fillStyle='#fff'; this.ctx.font='10px Arial'; this.ctx.fillText(p.n,p.x,p.y-40); 
+                    this.ctx.fillStyle='#333'; this.ctx.fillRect(p.x-20,p.y-35,40,4); this.ctx.fillStyle='#0f0'; this.ctx.fillRect(p.x-20,p.y-35,40*(p.hp/p.mhp),4); 
+                });
+                
+                this.floats = this.floats.filter(f => f.draw(this.ctx, 0, 0));
+                this.ctx.restore();
+
+                // Minimap
+                this.mmCtx.clearRect(0,0,150,150);
+                const ms = 150/this.mapSize; 
+                if(this.state.z) this.state.z.forEach(z => { this.mmCtx.strokeStyle = z.t==='rock'?'#f00':(z.t==='paper'?'#00f':'#0f0'); this.mmCtx.beginPath(); this.mmCtx.arc(z.x*ms, z.y*ms, 150*ms, 0, Math.PI*2); this.mmCtx.stroke(); });
+                if(this.state.p) this.state.p.forEach(p => { 
+                    if(p.a) { 
+                        if(p.inv && p.id !== this.myId) return; // Hide invisible on minimap too
+                        this.mmCtx.fillStyle = p.id===this.myId?'#fff':(p.t==='rock'?'#f00':(p.t==='paper'?'#00f':'#0f0')); 
+                        this.mmCtx.beginPath(); this.mmCtx.arc(p.x*ms, p.y*ms, p.id===this.myId?3:2, 0, Math.PI*2); this.mmCtx.fill(); 
+                    }
+                });
             }
-            if(nick && nick !== "undefined") { ctx.font='bold 11px Orbitron'; ctx.fillStyle='#fff'; ctx.shadowColor='black'; ctx.shadowBlur=4; ctx.fillText(nick, x, y-r-12); ctx.shadowBlur=0; }
-        }
-        function spawnParticles(x, y, c, n) { for(let i=0; i<n; i++) particles.push({x, y, dx:(Math.random()-0.5)*12, dy:(Math.random()-0.5)*12, l:1, c}); }
+        };
+        window.onload = () => app.init();
     </script>
 </body>
 </html>
