@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon KPN v3.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        body { background: #050505; color: white; font-family: 'Orbitron', sans-serif; overflow: hidden; touch-action: none; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .glass { background: rgba(20,20,30,0.85); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 20px rgba(0,0,0,0.7); }
+        .screen { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.3s; pointer-events: none; }
+        .screen.active { opacity: 1; pointer-events: auto; }
+        .screen.hidden { opacity: 0; }
+        #scr-lobby.active { pointer-events: none; }
+        #scr-lobby .interactive { pointer-events: auto; }
+        .t-btn { transition: 0.2s; filter: grayscale(1); transform: scale(0.9); border: 2px solid transparent; }
+        .t-btn.sel { filter: grayscale(0); transform: scale(1.1); border-color: white; box-shadow: 0 0 15px currentColor; }
+        
+        /* Mobile Controls UI v3 */
+        #dash-btn { position: absolute; bottom: 30px; right: 30px; width: 90px; height: 90px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; font-size: 32px; background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); z-index: 50; display: none; box-shadow: 0 0 15px rgba(255,255,255,0.2); transition: transform 0.1s; }
+        #dash-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
+        
+        #chat-btn { position: absolute; top: 70px; left: 10px; width: 40px; height: 40px; border-radius: 8px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3); display: none; justify-content: center; align-items: center; font-size: 20px; z-index: 50; pointer-events: auto; }
+        
+        #btn-fs { position: fixed; top: 10px; left: 10px; z-index: 9999; width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; border: 1px solid rgba(255,255,255,0.3); cursor: pointer; pointer-events: auto; }
+        #kill-feed { position: absolute; top: 60px; right: 20px; text-align: right; pointer-events: none; z-index: 20; }
+        .kill-msg { background: linear-gradient(90deg, transparent, rgba(0,0,0,0.8)); color: #fff; padding: 4px 10px; margin-bottom: 2px; font-size: 12px; border-right: 3px solid; animation: fadeOut 4s forwards; }
+        #joystick-zone { position: absolute; bottom: 30px; left: 30px; width: 140px; height: 140px; z-index: 50; display: none; pointer-events: auto; }
+        .perf-mon { position: absolute; top: 10px; right: 10px; font-family: monospace; font-size: 10px; color: #0f0; text-align: right; pointer-events: none; }
+        
+        /* Chat Input Style */
+        #chat-input-wrap { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); width: 300px; display: none; z-index: 100; }
+        #chat-input { width: 100%; background: rgba(0,0,0,0.8); border: 2px solid #3b82f6; color: white; padding: 10px; border-radius: 8px; outline: none; font-family: 'Orbitron'; text-align: center; box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+        
+        @keyframes fadeOut { 0% {opacity:0; transform:translateX(20px);} 10% {opacity:1; transform:translateX(0);} 80% {opacity:1;} 100% {opacity:0;} }
+        @media (hover: none) and (pointer: coarse) { #dash-btn, #chat-btn { display: flex; } #joystick-zone { display: block !important; } }
+    </style>
+</head>
+<body>
+    <div id="btn-fs" onclick="toggleFS()">⛶</div>
+    <div id="chat-btn" onclick="toggleChat(true)">💬</div>
+    <div class="perf-mon">FPS: <span id="mon-fps">0</span> | PING: <span id="mon-ping">0</span>ms</div>
+    <div id="kill-feed"></div>
+
+    <div id="chat-input-wrap">
+        <input id="chat-input" type="text" maxlength="40" placeholder="Napisz wiadomość..." onblur="toggleChat(false)">
+    </div>
+
+    <div id="scr-login" class="screen active">
+        <h1 class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-blue-500 to-green-500 mb-2">NEON KPN</h1>
+        <p class="text-sm tracking-[0.5em] text-gray-400 mb-8">v3.0 CHAT & HAPTICS</p>
+        <div class="glass p-8 rounded-xl w-full max-w-sm flex flex-col gap-5 border-t border-blue-500/30">
+            <input id="inp-nick" type="text" placeholder="TWÓJ NICK" class="bg-black/50 border border-gray-600 text-white text-center p-3 rounded w-full outline-none focus:border-blue-500">
+            <button onclick="getRooms()" class="bg-gradient-to-r from-blue-700 to-blue-500 hover:from-blue-600 hover:to-blue-400 py-3 rounded font-bold transition transform hover:scale-105 shadow-lg">SZUKAJ GRY</button>
+        </div>
+    </div>
+
+    <div id="scr-rooms" class="screen hidden">
+        <h2 class="text-3xl mb-6 font-bold text-blue-200 uppercase">Wybierz Arenę</h2>
+        <div id="list-rooms" class="flex flex-col gap-3 w-full max-w-md px-4"></div>
+        <button onclick="showScreen('scr-login')" class="mt-8 text-gray-500 hover:text-white transition">← POWRÓT</button>
+    </div>
+
+    <div id="scr-lobby" class="screen hidden">
+        <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none w-56 md:w-64">
+            <div class="glass p-3 rounded interactive border-l-4 border-white">
+                <div class="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Gracze w Lobby</div>
+                <div id="lobby-players" class="flex flex-col gap-1 max-h-48 overflow-y-auto pr-2"></div>
+            </div>
+            <div class="glass p-3 rounded interactive border-l-4 border-blue-500">
+                <div id="lobby-rid" class="text-xl font-bold text-white">LOBBY</div>
+                <div id="host-controls" class="hidden mt-2 pt-2 border-t border-gray-700 flex flex-col gap-2">
+                    <div class="flex gap-1">
+                        <button onclick="setMode('play')" id="mode-hero" class="flex-1 text-[10px] py-1 bg-gray-700 rounded hover:bg-gray-600">HERO</button>
+                        <button onclick="setMode('sim')" id="mode-sim" class="flex-1 text-[10px] py-1 bg-gray-700 rounded hover:bg-gray-600">RTS</button>
+                    </div>
+                    <button onclick="hostStart()" class="w-full bg-green-600 hover:bg-green-500 py-2 rounded text-xs font-bold transition shadow-[0_0_10px_lime]">START</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute top-4 right-4 glass p-3 rounded interactive text-right border-r-4 border-yellow-500">
+            <div class="text-xs text-gray-400 uppercase tracking-widest">Tryb</div>
+            <div id="lobby-mode" class="text-xl font-bold text-yellow-400">HERO</div>
+        </div>
+        
+        <div class="absolute bottom-0 w-full p-6 flex flex-col items-center gap-6 pointer-events-none">
+            <div class="text-sm text-blue-200 bg-blue-900/30 border border-blue-500/30 px-4 py-2 rounded-full backdrop-blur shadow-[0_0_15px_rgba(0,255,0,0.2)] interactive">
+                WASD: Kamera | Enter: Czat | Procą (Max <span id="limit-val">3</span>)
+            </div>
+            <div class="flex gap-8 interactive">
+                <div class="t-btn w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gray-900 flex items-center justify-center text-4xl cursor-pointer text-red-500 sel shadow-xl" onclick="setType('rock', this)" style="color:#ef4444">🪨</div>
+                <div class="t-btn w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gray-900 flex items-center justify-center text-4xl cursor-pointer text-blue-500 shadow-xl" onclick="setType('paper', this)" style="color:#3b82f6">📄</div>
+                <div class="t-btn w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gray-900 flex items-center justify-center text-4xl cursor-pointer text-green-500 shadow-xl" onclick="setType('scissors', this)" style="color:#22c55e">✂️</div>
+            </div>
+            <div class="flex gap-4 w-full max-w-sm interactive">
+                <button onclick="sock.emit('clearPlans')" class="bg-red-900/40 border border-red-500/50 p-4 rounded-lg text-red-400 hover:bg-red-900 transition">✕</button>
+                <button id="btn-ready" onclick="toggleReady()" class="flex-1 bg-gray-800 border border-gray-600 p-4 rounded-lg font-bold hover:bg-gray-700 transition">GOTOWY?</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="scr-game" class="screen hidden" style="pointer-events: none;">
+        <div class="absolute top-4 right-4 glass px-6 py-3 rounded-xl pointer-events-auto border-b-4 border-yellow-500">
+            <span class="text-yellow-400 font-mono text-2xl font-bold" id="score">0</span> <span class="text-xs text-gray-400">PKT</span>
+        </div>
+        <div id="win-msg" class="hidden absolute inset-0 flex items-center justify-center bg-black/90 backdrop-blur-sm z-50">
+            <h1 class="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 drop-shadow-[0_0_30px_rgba(255,200,0,0.6)] mb-4">ZWYCIĘSTWO</h1>
+        </div>
+    </div>
+    
+    <div id="joystick-zone"></div>
+    <div id="dash-btn" onmousedown="dash(true)" onmouseup="dash(false)" ontouchstart="dash(true)" ontouchend="dash(false)">⚡</div>
+
+    <canvas id="cvs"></canvas>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+    <script>
+        const cvs = document.getElementById('cvs'); const ctx = cvs.getContext('2d');
+        const COLORS = { rock: '#ef4444', paper: '#3b82f6', scissors: '#22c55e' };
+        const ICONS = { rock: '🪨', paper: '📄', scissors: '✂️' };
+        const TYPE_NAMES = { rock: 'KAMIEŃ', paper: 'PAPIER', scissors: 'NOŻYCE' };
+        
+        let sock, myId, roomData = null;
+        let cam = {x:1000, y:1000}; 
+        let players = {}, minions = [], orbs = [];
+        let particles = [], shockwaves = [];
+        let state = 'login'; 
+        let myType = 'rock';
+        let keys = {w:0, a:0, s:0, d:0, sp:0};
+        let joyInput = {x:0, y:0};
+        let dragStart = null; let dragCurr = null;
+        
+        // Chat vars
+        let isChatting = false;
+
+        let lastPerfUpdate = 0; let frames = 0;
+        let pingInterval = null;
+
+        function resize() { cvs.width = window.innerWidth; cvs.height = window.innerHeight; }
+        window.onresize = resize; resize();
+        function toggleFS() { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else if(document.exitFullscreen) document.exitFullscreen(); }
+        
+        // Haptics Helper
+        function vibe(ms) { if(navigator.vibrate) navigator.vibrate(ms); }
+
+        // Chat Helper
+        function toggleChat(force) {
+            const wrap = document.getElementById('chat-input-wrap');
+            const inp = document.getElementById('chat-input');
+            if(force === true || (force === undefined && wrap.style.display !== 'block')) {
+                wrap.style.display = 'block'; inp.focus(); isChatting = true;
+            } else {
+                wrap.style.display = 'none'; inp.blur(); isChatting = false;
+            }
+        }
+        
+        document.getElementById('chat-input').addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') {
+                const txt = e.target.value.trim();
+                if(txt) sock.emit('chat', txt);
+                e.target.value = '';
+                toggleChat(false);
+            }
+        });
+
+        if(typeof nipplejs !== 'undefined') {
+            const manager = nipplejs.create({ zone: document.getElementById('joystick-zone'), mode: 'static', position: {left: '50%', top: '50%'}, color: 'white', size: 120 });
+            manager.on('move', (evt, data) => { if(data.vector) joyInput = {x: data.vector.x, y: -data.vector.y}; });
+            manager.on('end', () => { joyInput = {x:0, y:0}; });
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => { s.classList.add('hidden'); s.classList.remove('active'); });
+            document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('active');
+        }
+
+        function getRooms() {
+            const nick = document.getElementById('inp-nick').value || 'Guest';
+            sock = io();
+            sock.on('connect', () => {
+                sock.emit('getRooms');
+                if(pingInterval) clearInterval(pingInterval);
+                pingInterval = setInterval(() => {
+                    const start = Date.now();
+                    sock.emit('ping', () => { 
+                        const pingEl = document.getElementById('mon-ping');
+                        if(pingEl) pingEl.innerText = Date.now() - start; 
+                    });
+                }, 2000);
+            });
+            sock.on('roomList', list => {
+                document.getElementById('list-rooms').innerHTML = list.map(r => `<div onclick="join('${r.id}', '${nick}')" class="glass p-4 rounded cursor-pointer hover:bg-gray-800 flex justify-between items-center transition hover:border-blue-500"><span class="font-bold text-lg text-blue-100">${r.id}</span><span class="${r.status==='GRA'?'text-red-400 border border-red-900 bg-red-900/20':'text-green-400 border border-green-900 bg-green-900/20'} px-2 py-1 rounded text-xs font-bold">${r.status} (${r.count})</span></div>`).join('');
+                showScreen('scr-rooms');
+            });
+
+            sock.on('joined', d => { myId = d.id; showScreen('scr-lobby'); state = 'lobby'; setupLobbyTouch(); });
+            
+            // Handle Chat Messages
+            sock.on('chat', d => {
+                if(players[d.id]) {
+                    players[d.id].chat = { msg: d.msg, timer: 180 }; // ~6 seconds (30fps)
+                }
+            });
+
+            sock.on('u', d => {
+                roomData = d.st; minions = d.m; orbs = d.o;
+                const hPanel = document.getElementById('host-controls');
+                if(roomData.h === myId && state === 'lobby') hPanel.classList.remove('hidden');
+                else hPanel.classList.add('hidden');
+
+                let pListHtml = '';
+                d.p.forEach(p => {
+                    if(!players[p.id]) players[p.id] = { ...p, cx: p.x, cy: p.y, chat: null };
+                    else {
+                        const pl = players[p.id];
+                        // Smoother interpolation for v3
+                        pl.cx += (p.x - pl.cx) * 0.2; pl.cy += (p.y - pl.cy) * 0.2;
+                        pl.t = p.t; pl.s = p.s; pl.a = p.a; pl.r = p.r;
+                        pl.pl = p.pl; pl.cd = p.cd; pl.mcd = p.mcd; pl.n = p.n || "Gracz"; 
+                        // Keep chat if exists
+                        if(!pl.chat) pl.chat = null;
+                    }
+                    const isMe = p.id === myId;
+                    
+                    const readyIndicator = p.r 
+                        ? '<span class="text-green-500 font-bold mr-2 text-sm">✔</span>' 
+                        : '<span class="text-gray-600 font-bold mr-2 text-sm">•</span>';
+
+                    pListHtml += `<div class="flex items-center justify-between text-[10px] bg-white/5 p-2 rounded border-r-2 mb-1" style="border-color:${COLORS[p.t]}">
+                        <div class="flex items-center min-w-0">
+                            ${readyIndicator}
+                            <span class="${isMe?'text-yellow-400':'text-white'} truncate font-bold tracking-wider max-w-[100px]">${p.n || "Gracz"}</span>
+                        </div>
+                        <span class="text-base">${ICONS[p.t]}</span>
+                    </div>`;
+                });
+                if(state === 'lobby') {
+                    const lobbyPlayersEl = document.getElementById('lobby-players');
+                    if(lobbyPlayersEl) lobbyPlayersEl.innerHTML = pListHtml;
+                }
+                
+                if(state === 'lobby') {
+                    const isHero = roomData.m === 'play';
+                    document.getElementById('lobby-mode').innerText = isHero ? 'HERO' : 'RTS';
+                    document.getElementById('limit-val').innerText = isHero ? '3' : '5';
+                    const me = players[myId];
+                    const btn = document.getElementById('btn-ready');
+                    if(me && me.r) { 
+                        btn.innerText = "CZEKAJ..."; 
+                        btn.className = "flex-1 bg-green-700/80 border border-green-500 text-white p-4 rounded-lg font-bold shadow-[0_0_15px_rgba(0,255,0,0.3)] transition-all"; 
+                    } else { 
+                        btn.innerText = "GOTOWY?"; 
+                        btn.className = "flex-1 bg-gray-800 border border-gray-600 p-4 rounded-lg font-bold text-white shadow-lg transition-colors hover:bg-gray-700"; 
+                    }
+                }
+
+                if(roomData.a && state !== 'game') { state = 'game'; showScreen('scr-game'); }
+                else if(!roomData.a && state === 'game') { state = 'lobby'; showScreen('scr-lobby'); document.getElementById('win-msg').classList.add('hidden'); }
+                if(players[myId]) document.getElementById('score').innerText = players[myId].s;
+            });
+
+            sock.on('fx', d => {
+                if(d.t === 'kill') { 
+                    spawnParticles(d.x, d.y, COLORS[d.c], 15); 
+                    shockwaves.push({x:d.x, y:d.y, r:0, o:1, c:COLORS[d.c]}); 
+                    if(d.msg) addKillMsg(d.msg, COLORS[d.c]);
+                    // Haptic feedback
+                    vibe(200);
+                }
+                if(d.t === 'convert') { spawnParticles(d.x, d.y, COLORS[d.c], 10); shockwaves.push({x:d.x, y:d.y, r:0, o:1, c:COLORS[d.c]}); }
+                if(d.t === 'orb') spawnParticles(d.x, d.y, '#ffd700', 5);
+            });
+        }
+
+        function addKillMsg(msg, col) {
+            const feed = document.getElementById('kill-feed');
+            const el = document.createElement('div'); el.className = "kill-msg"; el.innerText = msg; el.style.borderRightColor = col;
+            feed.appendChild(el); setTimeout(() => el.remove(), 4000);
+        }
+
+        function join(rid, nick) { sock.emit('join', {roomId: rid, nick}); }
+        function setType(t, el) { myType = t; document.querySelectorAll('.t-btn').forEach(b => b.classList.remove('sel')); el.classList.add('sel'); sock.emit('setType', t); }
+        function toggleReady() { sock.emit('toggleReady'); }
+        function setMode(m) { sock.emit('setMode', m); }
+        function hostStart() { sock.emit('hostStart'); }
+
+        function setupLobbyTouch() {
+            cvs.onmousedown = (e) => startDrag(e.clientX, e.clientY);
+            window.onmousemove = (e) => moveDrag(e.clientX, e.clientY);
+            window.onmouseup = (e) => endDrag();
+            cvs.ontouchstart = (e) => { e.preventDefault(); startDrag(e.touches[0].clientX, e.touches[0].clientY); };
+            cvs.ontouchmove = (e) => { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); };
+            cvs.ontouchend = (e) => { e.preventDefault(); endDrag(); };
+        }
+
+        function startDrag(cx, cy) {
+            if(state !== 'lobby') return;
+            dragStart = { 
+                x: cx + cam.x - window.innerWidth/2, 
+                y: cy + cam.y - window.innerHeight/2 
+            };
+            dragCurr = { ...dragStart };
+        }
+        function moveDrag(cx, cy) {
+            if(!dragStart || state !== 'lobby') return;
+            dragCurr = { 
+                x: cx + cam.x - window.innerWidth/2, 
+                y: cy + cam.y - window.innerHeight/2 
+            };
+        }
+        function endDrag() {
+            if(!dragStart || state !== 'lobby') return;
+            const dx = dragStart.x - dragCurr.x; const dy = dragStart.y - dragCurr.y;
+            if (Math.hypot(dx, dy) > 30) {
+                 const powerX = dx * 0.12; const powerY = dy * 0.12; 
+                 sock.emit('planMinion', { x: dragStart.x, y: dragStart.y, dx: powerX, dy: powerY });
+            }
+            dragStart = null; dragCurr = null;
+        }
+
+        window.onkeydown = e => { 
+            if(isChatting) return; // Disable movement keys when typing
+            if(e.key==='w')keys.w=1; if(e.key==='a')keys.a=1; if(e.key==='s')keys.s=1; if(e.key==='d')keys.d=1; 
+            if(e.code==='Space')keys.sp=true; 
+            if(e.key === 'Enter') toggleChat();
+        }
+        window.onkeyup = e => { 
+            if(e.key==='w')keys.w=0; if(e.key==='a')keys.a=0; if(e.key==='s')keys.s=0; if(e.key==='d')keys.d=0; 
+            if(e.code==='Space')keys.sp=false; 
+        }
+        function dash(on) { keys.sp = on; if(on) vibe(50); }
+
+        function loop() {
+            frames++;
+            const now = Date.now();
+            if(now - lastPerfUpdate >= 1000) { document.getElementById('mon-fps').innerText = frames; frames = 0; lastPerfUpdate = now; }
+
+            requestAnimationFrame(loop);
+            const me = players[myId];
+            let dx = 0, dy = 0;
+            if(!isChatting) {
+                if(keys.w) dy-=1; if(keys.s) dy+=1; if(keys.a) dx-=1; if(keys.d) dx+=1;
+            }
+            if(joyInput.x !== 0 || joyInput.y !== 0) { dx = joyInput.x; dy = joyInput.y; }
+
+            if(state === 'game' && me && me.a) {
+                sock.emit('input', {x:dx, y:dy, d:keys.sp}); keys.sp = false; 
+                me.cx += dx * 7; me.cy += dy * 7; 
+                cam.x += (me.cx - cam.x) * 0.1; cam.y += (me.cy - cam.y) * 0.1;
+            } else {
+                const camSpeed = 15; cam.x += dx * camSpeed; cam.y += dy * camSpeed;
+                cam.x = Math.max(0, Math.min(2000, cam.x)); cam.y = Math.max(0, Math.min(2000, cam.y));
+            }
+
+            ctx.fillStyle = '#050510'; ctx.fillRect(0,0,cvs.width,cvs.height);
+            ctx.save(); ctx.translate(-cam.x + window.innerWidth/2, -cam.y + window.innerHeight/2);
+            
+            const gridSize = 100; ctx.beginPath();
+            for(let x=0; x<=2000; x+=gridSize) { ctx.moveTo(x,0); ctx.lineTo(x,2000); }
+            for(let y=0; y<=2000; y+=gridSize) { ctx.moveTo(0,y); ctx.lineTo(2000,y); }
+            ctx.strokeStyle = 'rgba(50,50,100,0.2)'; ctx.lineWidth=2; ctx.stroke();
+            ctx.shadowBlur=20; ctx.shadowColor='#00ffff'; ctx.strokeStyle='#00ffff'; ctx.lineWidth=5; ctx.strokeRect(0,0,2000,2000); ctx.shadowBlur=0;
+
+            // Drawing plans (lobby)
+            Object.values(players).forEach(p => {
+                if(p.pl) p.pl.forEach(plan => {
+                    if(!p.n || p.n === "undefined" || plan.t === undefined) return;
+                    const isMyPlan = p.id === myId;
+                    ctx.globalAlpha= isMyPlan ? 0.7 : 0.3; 
+                    ctx.beginPath(); ctx.arc(plan.x, plan.y, 22, 0, Math.PI*2); ctx.fillStyle=COLORS[plan.t]; ctx.fill();
+                    ctx.fillStyle='#fff'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; 
+                    ctx.fillText(ICONS[plan.t], plan.x, plan.y+5);
+                    
+                    ctx.font='bold 11px Orbitron'; ctx.fillStyle='#fff';
+                    ctx.shadowColor='black'; ctx.shadowBlur=6;
+                    ctx.fillText(`${p.n.toUpperCase()} (${TYPE_NAMES[plan.t]})`, plan.x, plan.y - 35);
+                    ctx.shadowBlur=0;
+
+                    if (plan.dx && plan.dy && isMyPlan) {
+                        ctx.beginPath(); ctx.moveTo(plan.x, plan.y); ctx.lineTo(plan.x+plan.dx*12, plan.y+plan.dy*12);
+                        ctx.strokeStyle=COLORS[plan.t]; ctx.lineWidth=3; ctx.stroke();
+                    }
+                    ctx.globalAlpha=1;
+                });
+            });
+
+            if(dragStart && dragCurr && state === 'lobby') {
+                const dx = dragStart.x - dragCurr.x, dy = dragStart.y - dragCurr.y, dist = Math.hypot(dx, dy), col = COLORS[myType];
+                ctx.beginPath(); ctx.moveTo(dragStart.x, dragStart.y); ctx.lineTo(dragCurr.x, dragCurr.y); ctx.strokeStyle=`rgba(255,255,255,0.4)`; ctx.setLineDash([5,5]); ctx.lineWidth=2; ctx.stroke(); ctx.setLineDash([]);
+                if (dist > 30) {
+                    const endX = dragStart.x + dx, endY = dragStart.y + dy;
+                    ctx.beginPath(); ctx.moveTo(dragStart.x, dragStart.y); ctx.lineTo(endX, endY);
+                    ctx.strokeStyle=col; ctx.lineWidth=4; ctx.shadowBlur=10; ctx.shadowColor=col; ctx.stroke();
+                    ctx.beginPath(); ctx.arc(dragStart.x, dragStart.y, 8, 0, Math.PI*2); ctx.fillStyle=col; ctx.fill();
+                    ctx.shadowBlur=0;
+                }
+            }
+
+            for (let i=shockwaves.length-1; i>=0; i--) {
+                const s = shockwaves[i]; s.r += 3; s.o -= 0.05;
+                if(s.o <= 0) { shockwaves.splice(i,1); continue; }
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.strokeStyle=s.c; ctx.lineWidth=4; ctx.globalAlpha=s.o; ctx.stroke(); ctx.globalAlpha=1;
+            }
+
+            orbs.forEach(o => { ctx.fillStyle='#ffd700'; ctx.shadowBlur=15; ctx.shadowColor='#ffd700'; ctx.beginPath(); ctx.arc(o[0], o[1], 6, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur=0; });
+            minions.forEach(m => drawEntity(m.x, m.y, 22, m.t, null));
+            Object.values(players).forEach(p => { 
+                // Draw Chat Bubble
+                if(p.chat) {
+                    p.chat.timer--;
+                    if(p.chat.timer <= 0) p.chat = null;
+                    else {
+                        ctx.font = '14px Orbitron';
+                        const w = ctx.measureText(p.chat.msg).width + 20;
+                        const bx = p.cx, by = p.cy - 60;
+                        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                        ctx.beginPath(); ctx.roundRect(bx - w/2, by - 15, w, 30, 10); ctx.fill();
+                        ctx.fillStyle = 'black'; ctx.textAlign = 'center'; ctx.fillText(p.chat.msg, bx, by+5);
+                        
+                        // Triangle
+                        ctx.beginPath(); ctx.moveTo(bx, by+15); ctx.lineTo(bx-5, by+22); ctx.lineTo(bx+5, by+22); ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.fill();
+                    }
+                }
+                
+                if(p.a) drawEntity(p.cx, p.cy, 30, p.t, p.n, p); 
+            });
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i]; p.x += p.dx; p.y += p.dy; p.l -= 0.05;
+                if (p.l <= 0) { particles.splice(i, 1); continue; }
+                ctx.globalAlpha = Math.max(0, p.l); ctx.fillStyle = p.c;
+                ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0, p.l * 5), 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.globalAlpha = 1; ctx.restore();
+        }
+        loop();
+
+        function drawEntity(x, y, r, t, nick, pObj=null) {
+            const col = COLORS[t]; ctx.shadowBlur=20; ctx.shadowColor=col;
+            ctx.fillStyle=col; ctx.globalAlpha=0.2; ctx.beginPath(); ctx.arc(x,y,r+5,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
+            ctx.fillStyle='#111'; ctx.strokeStyle=col; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+            ctx.fillStyle='#fff'; ctx.font=(r*0.8)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(ICONS[t],x,y);
+            if(pObj && pObj.mcd > 0) {
+                const pct = Math.max(0, 1-(pObj.cd/pObj.mcd)), barW=50; ctx.fillStyle='#333'; ctx.fillRect(x-barW/2, y+r+8, barW, 4);
+                ctx.fillStyle=pct===1?'#00ff00':'#ffff00'; ctx.fillRect(x-barW/2, y+r+8, barW*pct, 4);
+            }
+            if(nick && nick !== "undefined") { ctx.font='bold 11px Orbitron'; ctx.fillStyle='#fff'; ctx.shadowColor='black'; ctx.shadowBlur=4; ctx.fillText(nick, x, y-r-12); ctx.shadowBlur=0; }
+        }
+        function spawnParticles(x, y, c, n) { for(let i=0; i<n; i++) particles.push({x, y, dx:(Math.random()-0.5)*12, dy:(Math.random()-0.5)*12, l:1, c}); }
+    </script>
+</body>
+</html>
