@@ -1,7 +1,7 @@
 {
   "name": "neon-kpn-v2",
-  "version": "16.1.0",
-  "description": "Neon KPN - Base Healing Update",
+  "version": "16.1.1",
+  "description": "Neon KPN - Minimap Fix",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

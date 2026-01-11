@@ -59,7 +59,7 @@
 
     <div id="s-login" class="ui-screen active">
         <h1 class="text-7xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">NEON KPN</h1>
-        <p class="text-gray-400 mb-8 tracking-widest text-xs">V16.1 (BASE HEALING)</p>
+        <p class="text-gray-400 mb-8 tracking-widest text-xs">V16.1.1 (MINIMAP FIX)</p>
         <div class="panel">
             <input id="nick" class="inp" placeholder="Twój Nick" maxlength="15">
             <div id="stats-prev" class="text-xs text-gray-500 mt-2 mb-2">Ładowanie statystyk...</div>
@@ -70,9 +70,9 @@
 
     <div id="s-manual" class="ui-screen">
         <div class="panel" style="max-width:800px; text-align:left;">
-            <h1 class="text-3xl font-black mb-4 text-center">AKTUALIZACJA V16.1</h1>
+            <h1 class="text-3xl font-black mb-4 text-center">AKTUALIZACJA V16.1.1</h1>
             <ul class="list-disc pl-5 my-2 text-gray-300 space-y-2">
-                <li><strong class="text-green-400">LECZENIE W BAZIE:</strong> Twoja baza teraz leczy!</li>
+                <li><strong class="text-green-400">MINIMAPA:</strong> Poprawiono wyświetlanie krzaków i apteczek.</li>
                 <li><strong class="text-yellow-400">CZĄSTECZKI:</strong> System efektów wizualnych.</li>
                 <li><strong class="text-red-400">GLITCH:</strong> Zombie są teraz cyfrowymi błędami.</li>
                 <li><strong class="text-blue-400">PULS:</strong> Mapa pulsuje w rytm gry.</li>
@@ -152,7 +152,7 @@
             <div class="skill-btn" style="border-color:#ffd700; color:#ffd700;" onmousedown="app.input.s=true" onmouseup="app.input.s=false" ontouchstart="app.input.s=true" ontouchend="app.input.s=false">★</div>
         </div>
         <div id="perk-ui"><h2 class="text-3xl font-black text-yellow-400 drop-shadow-lg mb-4">LEVEL UP!</h2><div id="perk-list"></div></div>
-        <canvas id="minimap-c"></canvas>
+        <canvas id="minimap-c" width="150" height="150"></canvas>
 
         <div id="chat-ui">
             <div id="chat-msgs"></div>
@@ -435,7 +435,17 @@
                 // Minimap
                 this.mmCtx.clearRect(0,0,150,150); const ms = 150/3000; 
                 this.mmCtx.fillStyle='#111'; this.mmCtx.beginPath(); this.mmCtx.arc(75, 75, 75, 0, Math.PI*2); this.mmCtx.fill(); // Map BG
+                
                 this.mmCtx.fillStyle = '#444'; this.walls.forEach(w => this.mmCtx.fillRect(w.x*ms, w.y*ms, w.w*ms, w.h*ms));
+                
+                // --- FIX: Add Bushes & Heal Spots to Minimap ---
+                this.mmCtx.fillStyle = '#004d00'; 
+                this.bushes.forEach(b => { this.mmCtx.beginPath(); this.mmCtx.arc(b.x*ms, b.y*ms, b.r*ms, 0, Math.PI*2); this.mmCtx.fill(); });
+                
+                this.mmCtx.fillStyle = '#0f0';
+                this.healSpots.forEach(h => { this.mmCtx.beginPath(); this.mmCtx.arc(h.x*ms, h.y*ms, h.r*ms, 0, Math.PI*2); this.mmCtx.fill(); });
+                // -----------------------------------------------
+
                 if(zr < 1500) { this.mmCtx.strokeStyle = '#f00'; this.mmCtx.beginPath(); this.mmCtx.arc(75, 75, zr*ms, 0, Math.PI*2); this.mmCtx.stroke(); }
                 if(this.state.z) this.state.z.forEach(z => { this.mmCtx.strokeStyle = z.t==='rock'?'#f00':(z.t==='paper'?'#00f':'#0f0'); this.mmCtx.beginPath(); this.mmCtx.arc(z.x*ms, z.y*ms, 150*ms, 0, Math.PI*2); this.mmCtx.stroke(); });
                 if(this.state.p) this.state.p.forEach(p => { if(p.a && (!p.inv || p.id===this.myId)) { this.mmCtx.fillStyle = p.id===this.myId?'#fff':'#f00'; this.mmCtx.beginPath(); this.mmCtx.arc(p.x*ms, p.y*ms, 2, 0, Math.PI*2); this.mmCtx.fill(); }});
