@@ -300,7 +300,8 @@
                     c.scrollTop = c.scrollHeight;
                 });
                 
-                this.join('public', false);
+                // Zamiast autojoin, pobieramy listę pokoi
+                this.sock.emit('getRooms');
             },
             join(id, locked) { const pass = locked ? prompt("Hasło:") : ""; this.sock.emit('join', { roomId: id, nick: document.getElementById('nick').value, pass }); },
             createRoom() { const n = document.getElementById('c-name').value; const p = document.getElementById('c-pass').value; const m = document.getElementById('c-mode').value; if(n) this.sock.emit('createRoom', { name:n, pass:p, mode:m }); },
