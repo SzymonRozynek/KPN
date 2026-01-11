@@ -1,7 +1,7 @@
 {
-  "name": "neon-kpn-legends",
-  "version": "11.1.0",
-  "description": "Neon KPN - Legends Edition (Better Voice)",
+  "name": "neon-kpn-geometric",
+  "version": "15.0.0",
+  "description": "Neon KPN - Geometric Update (Nonagon Map)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

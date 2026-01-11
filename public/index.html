@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon KPN: LEGENDS</title>
+    <title>Neon KPN: GEOMETRIC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;900&display=swap');
@@ -14,11 +14,9 @@
         .ui-screen.active { opacity: 1; pointer-events: auto; }
         .panel { background: rgba(20,20,30,0.6); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px); padding: 2rem; border-radius: 1rem; box-shadow: 0 0 30px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center; }
         .inp { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid #444; padding: 12px; color: white; border-radius: 8px; margin-bottom: 10px; outline: none; transition: 0.2s; font-family: inherit; font-size: 1.1rem; }
-        .inp:focus { border-color: #0ff; box-shadow: 0 0 10px rgba(0,255,255,0.2); }
         .btn { width: 100%; padding: 12px; font-weight: 700; border-radius: 8px; border: none; cursor: pointer; transition: 0.2s; letter-spacing: 1px; font-size: 1.1rem; margin-top: 5px; }
         .btn-primary { background: linear-gradient(135deg, #00c6ff, #0072ff); color: white; box-shadow: 0 4px 15px rgba(0,114,255,0.3); }
         .btn-sec { background: transparent; color: #888; margin-top: 10px; }
-        .btn-sec:hover { color: white; }
 
         .room-item { display: flex; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
         .room-item:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
@@ -33,38 +31,28 @@
         .touch-zone { position: absolute; bottom: 40px; width: 140px; height: 140px; pointer-events: auto; }
         #touch-l { left: 40px; } 
         #touch-r { right: 40px; display: flex; gap: 10px; align-items: flex-end; justify-content: flex-end; }
-        .skill-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; transition: 0.1s; position: relative; }
+        .skill-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; }
         
         @media (pointer: fine) { .touch-zone { display: none !important; } }
-        @keyframes blink-anim { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.1); box-shadow: 0 0 20px #ffd700; } 100% { opacity: 1; transform: scale(1); } }
-        .skill-ready { animation: blink-anim 1.5s infinite; border-color: #ffd700 !important; color: #ffd700 !important; background: rgba(255, 215, 0, 0.2) !important; }
-        .skill-cd { opacity: 0.5; cursor: not-allowed; }
         
         #perk-ui { position: absolute; top: 20%; width: 100%; text-align: center; pointer-events: auto; display: none; }
         .perk-opt { display: inline-block; background: #1a1a2e; border: 1px solid #0ff; padding: 20px; margin: 10px; width: 160px; border-radius: 10px; cursor: pointer; transition: 0.2s; box-shadow: 0 0 15px rgba(0,255,255,0.1); }
-        .perk-opt:hover { transform: translateY(-5px); box-shadow: 0 0 25px rgba(0,255,255,0.3); background: #232342; }
+
+        #minimap-c { position: absolute; z-index: 5; background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 50%; overflow: hidden; pointer-events: none; bottom: 20px; right: 20px; width: 150px; height: 150px; }
         
-        #announcer { position: absolute; top: 30%; width: 100%; text-align: center; pointer-events: none; font-size: 3rem; font-weight: 900; text-transform: uppercase; text-shadow: 0 0 20px black; opacity: 0; transition: 0.3s; transform: scale(0.5); }
-        .announce-anim { animation: popIn 2s forwards; }
-        @keyframes popIn { 0% { opacity:0; transform:scale(0.5); } 20% { opacity:1; transform:scale(1.2); } 80% { opacity:1; transform:scale(1); } 100% { opacity:0; transform:scale(1.5); } }
-
-        #minimap-c { position: absolute; z-index: 5; background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 50%; overflow: hidden; pointer-events: none; }
-        @media (min-width: 768px) { #minimap-c { bottom: 20px; right: 20px; width: 150px; height: 150px; } }
-        @media (max-width: 767px) { #minimap-c { top: 60px; left: 10px; width: 100px; height: 100px; } }
-
         .toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,0,0,0.8); padding: 10px 20px; border-radius: 20px; font-weight: bold; animation: fadeUp 3s forwards; }
         @keyframes fadeUp { 0% {opacity:0; transform:translate(-50%, 20px);} 10% {opacity:1; transform:translate(-50%, 0);} 80% {opacity:1;} 100% {opacity:0;} }
     </style>
 </head>
 <body>
-    <div id="toasts"></div>
-    <div id="announcer"></div>
+    <div id="toasts" style="position: absolute; top: 20px; width: 100%; text-align: center; z-index: 50; pointer-events: none;"></div>
 
     <div id="s-login" class="ui-screen active">
-        <h1 class="text-7xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">NEON LEGENDS</h1>
-        <p class="text-gray-400 mb-8 tracking-widest text-xs">V11.1</p>
+        <h1 class="text-7xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">NEON GEOMETRIC</h1>
+        <p class="text-gray-400 mb-8 tracking-widest text-xs">V15.0</p>
         <div class="panel">
             <input id="nick" class="inp" placeholder="Twój Nick" maxlength="15">
+            <div id="stats-prev" class="text-xs text-gray-500 mt-2 mb-2">Ładowanie statystyk...</div>
             <button class="btn btn-primary" onclick="app.connect()">GRAJ</button>
             <button class="btn btn-sec" onclick="app.screen('s-manual')">JAK GRAĆ?</button>
         </div>
@@ -72,13 +60,13 @@
 
     <div id="s-manual" class="ui-screen">
         <div class="panel" style="max-width:800px; text-align:left;">
-            <h1 class="text-3xl font-black mb-4 text-center">NOWE MOCE v11.0</h1>
+            <h1 class="text-3xl font-black mb-4 text-center">NOWOŚCI V15.0</h1>
             <ul class="list-disc pl-5 my-2 text-gray-300 space-y-2">
-                <li><strong class="text-red-500">KAMIEŃ (Tank):</strong> Skill <strong>GRAWITACJA</strong> - Wciąga wszystkich wrogów w pobliżu i ogłusza ich.</li>
-                <li><strong class="text-blue-500">PAPIER (Stealth):</strong> Skill <strong>WIDMO</strong> - Stajesz się niewidzialny i zyskujesz prędkość. Zostawiasz klona.</li>
-                <li><strong class="text-green-500">NOŻYCE (Vampire):</strong> Skill <strong>KRWAWA NOVA</strong> - Wybuch ostrzy, który leczy Cię za zadane obrażenia.</li>
+                <li><strong class="text-green-400">OKRĘGOWA ARENA:</strong> Mapa to idealne koło.</li>
+                <li><strong class="text-purple-400">SYMETRIA:</strong> Ściany i krzaki w układzie 9-kąta.</li>
+                <li><strong class="text-yellow-400">TAKTYKA:</strong> Każda baza ma własne zarośla.</li>
+                <li><strong>EMOTKI:</strong> Klawisze 1, 2, 3, 4.</li>
             </ul>
-            <p class="mt-4 text-sm">Kulki (XP) same przylatują, gdy jesteś blisko!</p>
             <button class="btn btn-primary mt-4" onclick="app.screen('s-login')">JAZDA!</button>
         </div>
     </div>
@@ -96,6 +84,10 @@
         <div class="panel">
             <h2 class="text-2xl font-bold mb-4">NOWY POKÓJ</h2>
             <input id="c-name" class="inp" placeholder="Nazwa">
+            <select id="c-mode" class="inp bg-black">
+                <option value="play">STANDARD</option>
+                <option value="koth">KING OF THE HILL</option>
+            </select>
             <input id="c-pass" class="inp" placeholder="Hasło (opcjonalne)">
             <button class="btn btn-primary" onclick="app.createRoom()">STWÓRZ</button>
             <button class="btn btn-sec" onclick="app.screen('s-list')">ANULUJ</button>
@@ -105,9 +97,9 @@
     <div id="s-lobby" class="ui-screen">
         <div class="panel" style="max-width: 600px;">
             <div class="flex justify-center mb-8" id="class-sel">
-                <div class="class-card" onclick="app.setType('rock')" id="c-rock"><div class="class-icon">🪨</div><div class="text-red-400 font-bold">TANK</div><div class="text-[10px]">GRAWITACJA</div></div>
-                <div class="class-card" onclick="app.setType('paper')" id="c-paper"><div class="class-icon">📄</div><div class="text-blue-400 font-bold">STEALTH</div><div class="text-[10px]">NIEWIDKA</div></div>
-                <div class="class-card" onclick="app.setType('scissors')" id="c-scissors"><div class="class-icon">✂️</div><div class="text-green-400 font-bold">VAMP</div><div class="text-[10px]">LIFESTEAL</div></div>
+                <div class="w-24 h-32 border-2 border-gray-600 rounded-lg m-2 flex flex-col items-center justify-center cursor-pointer hover:border-white" onclick="app.setType('rock')" id="c-rock"><div class="text-4xl">🪨</div><div class="text-red-400 font-bold">TANK</div></div>
+                <div class="w-24 h-32 border-2 border-gray-600 rounded-lg m-2 flex flex-col items-center justify-center cursor-pointer hover:border-white" onclick="app.setType('paper')" id="c-paper"><div class="text-4xl">📄</div><div class="text-blue-400 font-bold">SPEED</div></div>
+                <div class="w-24 h-32 border-2 border-gray-600 rounded-lg m-2 flex flex-col items-center justify-center cursor-pointer hover:border-white" onclick="app.setType('scissors')" id="c-scissors"><div class="text-4xl">✂️</div><div class="text-green-400 font-bold">DPS</div></div>
             </div>
             <div id="host-ctrl" class="hidden"><button class="btn btn-primary" onclick="app.start()">START</button></div>
             <div id="wait-msg" class="text-gray-400 animate-pulse mt-4">OCZEKIWANIE NA HOSTA...</div>
@@ -119,15 +111,19 @@
             <div class="text-xs text-gray-400">KDA</div>
             <div id="kda-disp" class="text-lg font-mono">0 / 0</div>
         </div>
-        <div id="leaderboard-panel" class="hidden md:block absolute top-4 right-4 w-64 bg-black/50 backdrop-blur-md border border-white/10 rounded-lg p-2 font-mono text-xs z-10">
+        
+        <div id="leaderboard-panel" class="hidden md:block absolute top-4 right-4 w-72 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg p-2 font-mono text-xs z-10">
+            <div class="flex justify-between border-b border-white/20 pb-1 mb-1 text-gray-400">
+                <span class="w-1/2">GRACZ</span>
+                <span class="w-1/4 text-right">PKT</span>
+                <span class="w-1/4 text-right">WIN 👑</span>
+            </div>
             <div id="leaderboard-list"></div>
         </div>
+
         <div style="position:absolute; top:20px; left:50%; transform:translateX(-50%); text-align:center;">
             <div id="score-disp" class="text-4xl font-bold text-yellow-400 drop-shadow-md">0</div>
             <div id="warn-sing" class="text-purple-500 font-black text-2xl animate-ping hidden">⚠ SINGULARITY ⚠</div>
-        </div>
-        <div class="absolute bottom-[80px] left-1/2 -translate-x-1/2 text-center pointer-events-none">
-            <div class="text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-t from-purple-600 to-white drop-shadow-lg" id="lvl-disp">LVL 1</div>
         </div>
         <div id="bar-hp-c" class="hud-bar-c"><div id="bar-hp" class="fill bg-red-500"></div></div>
         <div id="bar-xp-c" class="hud-bar-c"><div id="bar-xp" class="fill bg-purple-500"></div></div>
@@ -136,9 +132,7 @@
         <div id="touch-l" class="touch-zone"></div>
         <div id="touch-r" class="touch-zone">
             <div class="skill-btn" onmousedown="app.input.d=true" onmouseup="app.input.d=false" ontouchstart="app.input.d=true" ontouchend="app.input.d=false">⚡</div>
-            <div id="btn-skill" class="skill-btn" style="border-color:#ffd700; color:#ffd700;" onmousedown="app.input.s=true" onmouseup="app.input.s=false" ontouchstart="app.input.s=true" ontouchend="app.input.s=false">
-                <span id="skill-icon">★</span><span id="skill-timer" class="text-xs font-bold absolute"></span>
-            </div>
+            <div class="skill-btn" style="border-color:#ffd700; color:#ffd700;" onmousedown="app.input.s=true" onmouseup="app.input.s=false" ontouchstart="app.input.s=true" ontouchend="app.input.s=false">★</div>
         </div>
         <div id="perk-ui"><h2 class="text-3xl font-black text-yellow-400 drop-shadow-lg mb-4">LEVEL UP!</h2><div id="perk-list"></div></div>
         <canvas id="minimap-c"></canvas>
@@ -150,148 +144,124 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
     
     <script>
-        const AudioFX = {
-            ctx: new (window.AudioContext || window.webkitAudioContext)(),
-            play(t) {
-                if(this.ctx.state === 'suspended') this.ctx.resume();
-                const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-                o.connect(g); g.connect(this.ctx.destination);
-                const time = this.ctx.currentTime;
-                if(t==='shoot') { o.type='square'; o.frequency.setValueAtTime(400,time); o.frequency.exponentialRampToValueAtTime(100,time+0.1); g.gain.setValueAtTime(0.1,time); g.gain.exponentialRampToValueAtTime(0.01,time+0.1); o.start(); o.stop(time+0.1); }
-                if(t==='hit') { o.type='sawtooth'; o.frequency.setValueAtTime(100,time); g.gain.setValueAtTime(0.1,time); g.gain.linearRampToValueAtTime(0,time+0.1); o.start(); o.stop(time+0.1); }
-            },
-            speak(txt) {
-                if(!('speechSynthesis' in window)) return;
-                window.speechSynthesis.cancel();
-
-                const u = new SpeechSynthesisUtterance(txt);
-                const voices = window.speechSynthesis.getVoices();
-                
-                const voice = voices.find(v => v.name.includes('Google US English')) || 
-                              voices.find(v => v.name.includes('Zira')) || 
-                              voices.find(v => v.lang.startsWith('en')) || 
-                              voices[0];
-                
-                if(voice) u.voice = voice;
-                u.pitch = 1.0; 
-                u.rate = 1.0;  
-                u.volume = 1.0;
-                window.speechSynthesis.speak(u);
-            }
-        };
-        // Chrome hack to load voices
-        if('speechSynthesis' in window) window.speechSynthesis.getVoices();
-
-        class FloatText {
-            constructor(x, y, txt, col) { this.x=x; this.y=y; this.txt=txt; this.col=col; this.life=1.0; }
-            draw(ctx, cx, cy) {
-                this.y -= 1; this.life -= 0.02;
-                ctx.globalAlpha = Math.max(0, this.life);
-                ctx.fillStyle = this.col; ctx.font = "bold 20px Rajdhani"; ctx.strokeStyle = 'black'; ctx.lineWidth = 2;
-                ctx.strokeText(this.txt, this.x-cx, this.y-cy); ctx.fillText(this.txt, this.x-cx, this.y-cy);
-                ctx.globalAlpha = 1;
-                return this.life > 0;
-            }
-        }
+        const EMOTES = ['👍', '👎', '😂', '🤬'];
 
         const app = {
             sock: null, input: {x:0, y:0, d:false, s:false}, myId: null, state: {}, cam: {x:0, y:0, z:1.0}, mapSize: 3000, perks: {}, winScore: 1000,
-            floats: [],
+            floats: [], walls: [], bushes: [], localData: { kills: 0, wins: 0, nick: '' },
+            frames: 0, lastPing: 0,
             
             init() {
+                this.loadData();
                 this.cvs = document.getElementById('cvs'); this.ctx = this.cvs.getContext('2d');
                 this.mmCvs = document.getElementById('minimap-c'); this.mmCtx = this.mmCvs.getContext('2d');
                 window.addEventListener('resize', ()=>this.resize()); this.resize();
-                this.setupInput(); this.loop();
+                this.setupInput(); 
+                setInterval(() => {
+                     document.getElementById('kda-disp').innerText = `${this.state?.p?.find(x=>x.id===this.myId)?.kills||0} / ${this.state?.p?.find(x=>x.id===this.myId)?.deaths||0}`;
+                }, 1000);
+                this.loop();
             },
+            
+            loadData() {
+                const d = localStorage.getItem('neon_kpn_data');
+                if(d) {
+                    this.localData = JSON.parse(d);
+                    document.getElementById('nick').value = this.localData.nick || '';
+                    document.getElementById('stats-prev').innerText = `Total Kills: ${this.localData.kills} | Wins: ${this.localData.wins}`;
+                }
+            },
+            
+            saveData() {
+                this.localData.nick = document.getElementById('nick').value;
+                localStorage.setItem('neon_kpn_data', JSON.stringify(this.localData));
+            },
+
             resize() {
                 this.cvs.width = window.innerWidth * window.devicePixelRatio; this.cvs.height = window.innerHeight * window.devicePixelRatio;
                 this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
             },
             connect() {
+                this.saveData();
                 this.sock = io();
                 this.sock.on('roomList', list => {
                     const el = document.getElementById('rooms'); el.innerHTML = '';
-                    list.forEach(r => el.innerHTML += `<div class="room-item" onclick="app.join('${r.id}', ${r.locked})"><span class="font-bold">${r.name} ${r.locked?'🔒':''}</span><span class="text-xs bg-white/10 px-2 rounded py-1">[${r.c}/${r.max}]</span></div>`);
+                    list.forEach(r => el.innerHTML += `<div class="room-item" onclick="app.join('${r.id}', ${r.locked})"><span class="font-bold">${r.name} ${r.locked?'🔒':''}</span><span class="text-xs bg-white/10 px-2 rounded py-1">${r.mode.toUpperCase()} [${r.c}/${r.max}]</span></div>`);
                     this.screen('s-list');
                 });
                 this.sock.on('roomCreated', id => this.join(id, false));
-                this.sock.on('err', msg => this.toast(msg));
                 this.sock.on('joined', d => {
                     this.myId = d.id; this.mapSize = d.w; this.perks = d.perks; this.winScore = d.winScore;
+                    this.walls = d.walls || []; this.bushes = d.bushes || [];
                     this.screen('s-lobby'); if(d.host) { document.getElementById('host-ctrl').classList.remove('hidden'); document.getElementById('wait-msg').classList.add('hidden'); }
                 });
                 this.sock.on('gameStart', () => this.screen('hud'));
                 this.sock.on('gameOver', d => {
-                    let msg = "WYGRAŁ: " + d.w.toUpperCase(); if(d.reason === 'score') msg = "ZWYCIĘSTWO: " + d.w.toUpperCase();
-                    this.announce("GAME OVER"); this.toast(msg); setTimeout(() => this.screen('s-lobby'), 5000);
+                    if(d.w === this.state.p.find(x=>x.id===this.myId)?.n) { this.localData.wins++; this.saveData(); }
+                    let msg = `ZWYCIĘZCA: ${d.w.toUpperCase()}`;
+                    if (d.reason === 'score') msg += " (LIMIT PKT)";
+                    const t = document.createElement('div'); t.className=`toast text-white bg-green-600 px-6 py-4 rounded text-xl shadow-lg`; t.innerText=msg; document.getElementById('toasts').appendChild(t); 
+                    setTimeout(() => { t.remove(); this.screen('s-lobby'); }, 5000);
                 });
                 this.sock.on('u', p => {
                     this.state = p;
                     const me = p.p.find(x => x.id === this.myId);
                     
                     const lb = document.getElementById('leaderboard-list');
-                    lb.innerHTML = p.p.filter(x => x.a).sort((a,b)=>b.score-a.score).slice(0,5).map(pl=>`<div class="flex justify-between ${pl.id===this.myId?'text-yellow-400 font-bold':''}"><span>${pl.n}</span><span>${pl.score}</span></div>`).join('');
+                    lb.innerHTML = p.p.filter(x => x.a).sort((a,b)=>b.score-a.score).slice(0,5).map(pl=>`
+                        <div class="flex justify-between ${pl.id===this.myId?'text-yellow-400 font-bold':''}">
+                            <span class="w-1/2 truncate">${pl.n}</span>
+                            <span class="w-1/4 text-right">${pl.score}</span>
+                            <span class="w-1/4 text-right text-yellow-500">${pl.rw || 0}</span>
+                        </div>
+                    `).join('');
 
                     if(me) {
                         this.cam.x += (me.x - this.cam.x) * 0.1; this.cam.y += (me.y - this.cam.y) * 0.1;
-                        // Dynamic Zoom
-                        const speed = Math.hypot(me.x - this.cam.x, me.y - this.cam.y);
-                        const targetZ = speed > 50 ? 0.8 : 1.0;
-                        this.cam.z += (targetZ - this.cam.z) * 0.05;
-
                         if(me.a) {
                             document.getElementById('bar-hp').style.width = (me.hp/me.mhp)*100 + '%';
                             document.getElementById('bar-xp').style.width = (me.xp/me.nxp)*100 + '%';
                             document.getElementById('score-disp').innerText = me.score + " / " + this.winScore;
-                            document.getElementById('lvl-disp').innerText = "LVL " + me.lvl;
-                            document.getElementById('kda-disp').innerText = `${me.kills} / ${me.deaths}`;
                             document.getElementById('xp-text').innerText = `${me.xp} / ${me.nxp} XP`;
                             if(me.pen) this.showPerks(); else document.getElementById('perk-ui').style.display = 'none';
-                            
-                            const btn = document.getElementById('btn-skill'), timer = document.getElementById('skill-timer'), icon = document.getElementById('skill-icon');
-                            if(me.scd <= 0) { btn.classList.add('skill-ready'); btn.classList.remove('skill-cd'); timer.innerText = ""; icon.style.opacity = 1; }
-                            else { btn.classList.remove('skill-ready'); btn.classList.add('skill-cd'); timer.innerText = Math.ceil(me.scd/30); icon.style.opacity = 0; }
                         }
                     }
-                    if(p.st.s > 0) document.getElementById('warn-sing').classList.remove('hidden');
+                    if(p.st.sz < this.mapSize) {
+                         const warn = document.getElementById('warn-sing');
+                         warn.innerText = "BURZA NADCHODZI!";
+                         warn.classList.remove('hidden');
+                    }
                 });
                 this.sock.on('fx', d => {
-                    if(d.t === 'skill') AudioFX.play('shoot');
-                    if(d.t === 'kill') { AudioFX.play('hit'); this.toast(d.msg); }
-                    if(d.t === 'dmg') this.floats.push(new FloatText(d.x, d.y, d.v, d.c));
-                    if(d.t === 'streak') this.announce(d.k > 4 ? "GODLIKE!" : (d.k > 2 ? "RAMPAGE!" : "DOUBLE KILL!"));
+                    if(d.t === 'dmg') this.floats.push({x:d.x, y:d.y, t:d.v, c:d.c, l:1.0});
+                    if(d.t === 'emote') this.floats.push({x:this.state.p.find(x=>x.id===d.id)?.x, y:this.state.p.find(x=>x.id===d.id)?.y, t:EMOTES[d.e], c:'#fff', l:2.0, font:40});
                 });
                 this.sock.emit('getRooms');
             },
             join(id, locked) { const pass = locked ? prompt("Hasło:") : ""; this.sock.emit('join', { roomId: id, nick: document.getElementById('nick').value, pass }); },
-            createRoom() { const n = document.getElementById('c-name').value; const p = document.getElementById('c-pass').value; if(n) this.sock.emit('createRoom', { name:n, pass:p }); },
+            createRoom() { const n = document.getElementById('c-name').value; const p = document.getElementById('c-pass').value; const m = document.getElementById('c-mode').value; if(n) this.sock.emit('createRoom', { name:n, pass:p, mode:m }); },
             screen(id) { document.querySelectorAll('.ui-screen').forEach(e=>e.classList.remove('active')); const el=document.getElementById(id); if(el)el.classList.add('active'); const h=document.getElementById('hud'); if(id==='hud')h.style.display='block'; else h.style.display='none'; },
             setType(t) { document.querySelectorAll('.class-card').forEach(e=>e.classList.remove('sel')); document.getElementById('c-'+t).classList.add('sel'); this.sock.emit('setType', t); },
             start() { this.sock.emit('hostStart'); },
             showPerks() {
-                const el = document.getElementById('perk-ui'); if(el.style.display==='block')return; el.style.display='block';
                 const l = document.getElementById('perk-list'); l.innerHTML = '';
-                for(let k in this.perks) l.innerHTML += `<div class="perk-opt" onclick="app.pickPerk('${k}')"><div class="font-bold text-cyan-300">${this.perks[k].n}</div><div class="text-xs text-gray-400 mt-2">${this.perks[k].d}</div></div>`;
+                for(let k in this.perks) l.innerHTML += `<div class="perk-opt glass" onclick="app.pickPerk('${k}')"><div class="font-bold text-cyan-300 text-xl">${this.perks[k].n}</div><div class="text-xs text-gray-400 mt-2">${this.perks[k].d}</div></div>`;
             },
             pickPerk(pid) { this.sock.emit('perk', pid); document.getElementById('perk-ui').style.display='none'; },
-            toast(msg) { const t = document.createElement('div'); t.className='toast'; t.innerText=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 3000); },
-            announce(txt) {
-                const el = document.getElementById('announcer'); el.innerText = txt; el.classList.remove('announce-anim'); void el.offsetWidth; el.classList.add('announce-anim');
-                el.style.color = ['#f00', '#ff0', '#0ff', '#f0f'][Math.floor(Math.random()*4)];
-                AudioFX.speak(txt);
-            },
+            toast(msg) { const t = document.createElement('div'); t.className='toast text-white bg-red-600 px-4 py-2 rounded'; t.innerText=msg; document.getElementById('toasts').appendChild(t); setTimeout(()=>t.remove(), 3000); },
             setupInput() {
-                window.onkeydown = e => { if(e.key==='w')this.input.y=-1; if(e.key==='s')this.input.y=1; if(e.key==='a')this.input.x=-1; if(e.key==='d')this.input.x=1; if(e.code==='Space')this.input.d=true; if(e.key==='e')this.input.s=true; };
+                window.onkeydown = e => { 
+                    if(e.key==='w')this.input.y=-1; if(e.key==='s')this.input.y=1; if(e.key==='a')this.input.x=-1; if(e.key==='d')this.input.x=1; if(e.code==='Space')this.input.d=true; if(e.key==='e')this.input.s=true; 
+                    if(['1','2','3','4'].includes(e.key)) this.sock.emit('emote', parseInt(e.key)-1);
+                };
                 window.onkeyup = e => { if(e.key==='w'||e.key==='s')this.input.y=0; if(e.key==='a'||e.key==='d')this.input.x=0; if(e.code==='Space')this.input.d=false; if(e.key==='e')this.input.s=false; };
                 const mgr = nipplejs.create({ zone: document.getElementById('touch-l'), mode: 'static', position: {left: '50%', top: '50%'}, color: 'white' });
                 mgr.on('move', (e, d) => { if(d.vector) { this.input.x = d.vector.x; this.input.y = -d.vector.y; } });
                 mgr.on('end', () => { this.input.x = 0; this.input.y = 0; });
             },
-            loop() { requestAnimationFrame(()=>this.loop()); if(this.sock) this.sock.emit('input', {x:this.input.x, y:this.input.y, d:this.input.d, s:this.input.s}); this.render(); },
+            loop() { requestAnimationFrame(()=>this.loop()); if(this.sock) this.sock.emit('input', this.input); if(this.state.p && this.state.p.find(p=>p.id===this.myId && p.pen)) this.showPerks(); this.render(); this.frames++; },
             render() {
-                const w = window.innerWidth, h = window.innerHeight;
-                this.ctx.fillStyle = '#0a0a12'; this.ctx.fillRect(0,0,w,h);
+                const w = window.innerWidth, h = window.innerHeight; this.ctx.fillStyle = '#0a0a12'; this.ctx.fillRect(0,0,w,h);
                 if(!this.state || !this.state.p) return;
                 
                 this.ctx.save();
@@ -301,43 +271,78 @@
                 
                 // Parallax Grid
                 this.ctx.strokeStyle = '#1a1a2e'; this.ctx.lineWidth = 2; this.ctx.beginPath();
-                for(let i=0; i<=this.mapSize; i+=250) { this.ctx.moveTo(i,0); this.ctx.lineTo(i,this.mapSize); this.ctx.moveTo(0,i); this.ctx.lineTo(this.mapSize,i); }
-                this.ctx.stroke();
+                for(let i=0; i<=3000; i+=250) { this.ctx.moveTo(i,0); this.ctx.lineTo(i,3000); this.ctx.moveTo(0,i); this.ctx.lineTo(3000,i); } this.ctx.stroke();
+
+                // Draw Storm
+                const zr = this.state.st.sz;
+                if(zr < 1500) {
+                    this.ctx.beginPath();
+                    this.ctx.arc(1500, 1500, 1500, 0, Math.PI*2); // Outer map limit
+                    this.ctx.arc(1500, 1500, zr, 0, Math.PI*2, true); // Inner storm hole
+                    this.ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                    this.ctx.fill();
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(1500, 1500, zr, 0, Math.PI*2);
+                    this.ctx.strokeStyle = '#f00'; 
+                    this.ctx.lineWidth = 5; 
+                    this.ctx.stroke();
+                }
+
+                // Map Border
+                this.ctx.beginPath(); this.ctx.arc(1500, 1500, 1500, 0, Math.PI*2); this.ctx.strokeStyle = '#0ff'; this.ctx.lineWidth = 10; this.ctx.stroke();
+
+                // BUSHES
+                this.ctx.fillStyle = '#004d00';
+                this.bushes.forEach(b => { this.ctx.beginPath(); this.ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); this.ctx.fill(); this.ctx.strokeStyle = '#006600'; this.ctx.lineWidth=5; this.ctx.stroke(); });
 
                 if(this.state.z) this.state.z.forEach(z => { this.ctx.fillStyle = z.t==='rock'?'#f00':(z.t==='paper'?'#00f':'#0f0'); this.ctx.globalAlpha=0.1; this.ctx.beginPath(); this.ctx.arc(z.x,z.y,150,0,Math.PI*2); this.ctx.fill(); this.ctx.globalAlpha=1; });
                 this.state.o.forEach(o => { this.ctx.fillStyle='#ffd700'; this.ctx.shadowColor='#ffd700'; this.ctx.shadowBlur=10; this.ctx.beginPath(); this.ctx.arc(o[0],o[1],5,0,Math.PI*2); this.ctx.fill(); this.ctx.shadowBlur=0; });
 
-                const drawUnit = (x,y,t,r,inv) => {
-                    const c = t==='rock'?'#ef4444':(t==='paper'?'#3b82f6':'#22c55e');
+                // WALLS
+                this.ctx.fillStyle = '#222'; this.ctx.strokeStyle = '#0ff'; this.ctx.lineWidth = 3;
+                this.walls.forEach(wa => { this.ctx.shadowBlur = 10; this.ctx.shadowColor = '#0ff'; this.ctx.fillRect(wa.x, wa.y, wa.w, wa.h); this.ctx.strokeRect(wa.x, wa.y, wa.w, wa.h); this.ctx.shadowBlur = 0; });
+
+                const drawUnit = (x,y,t,r,inv, my) => {
+                    const c = t==='rock'?'#ef4444':(t==='paper'?'#3b82f6':(t==='zombie'?'#777':'#22c55e'));
                     this.ctx.fillStyle=c; this.ctx.shadowColor=c; this.ctx.shadowBlur=15; 
-                    if(inv) this.ctx.globalAlpha = 0.3; // Local view of invisible self
+                    if(inv) this.ctx.globalAlpha = my ? 0.5 : 0; 
                     this.ctx.beginPath(); this.ctx.arc(x,y,r,0,Math.PI*2); this.ctx.fill(); 
                     this.ctx.globalAlpha = 1; this.ctx.shadowBlur=0;
-                    this.ctx.fillStyle='#fff'; this.ctx.font=`${r}px Arial`; this.ctx.textAlign='center'; this.ctx.textBaseline='middle'; this.ctx.fillText(t==='rock'?'🪨':(t==='paper'?'📄':'✂️'),x,y);
+                    this.ctx.fillStyle='#fff'; this.ctx.font=`${r}px Arial`; this.ctx.textAlign='center'; this.ctx.textBaseline='middle'; this.ctx.fillText(t==='rock'?'🪨':(t==='paper'?'📄':(t==='zombie'?'🧟':'✂️')),x,y);
                 };
-                this.state.m.forEach(m => drawUnit(m.x, m.y, m.t, 18, false));
+                this.state.m.forEach(m => drawUnit(m.x, m.y, m.t, 18, false, false));
                 this.state.p.forEach(p => { 
-                    if(!p.a||p.d) return; 
-                    if(p.inv && p.id !== this.myId) return; // Don't draw invisible enemies
-                    drawUnit(p.x,p.y,p.t,28, p.inv); 
+                    if(!p.a || (p.inv && p.id !== this.myId)) return; 
+                    if(p.inBush) this.ctx.globalAlpha = 0.6;
+                    drawUnit(p.x,p.y,p.t,28, p.inv, p.id===this.myId); 
+                    this.ctx.globalAlpha = 1;
                     this.ctx.fillStyle='#fff'; this.ctx.font='10px Arial'; this.ctx.fillText(p.n,p.x,p.y-40); 
                     this.ctx.fillStyle='#333'; this.ctx.fillRect(p.x-20,p.y-35,40,4); this.ctx.fillStyle='#0f0'; this.ctx.fillRect(p.x-20,p.y-35,40*(p.hp/p.mhp),4); 
                 });
                 
-                this.floats = this.floats.filter(f => f.draw(this.ctx, 0, 0));
+                this.floats = this.floats.filter(f => {
+                    f.y -= 1; f.l -= 0.02;
+                    this.ctx.globalAlpha = Math.max(0, f.l);
+                    this.ctx.fillStyle = f.c; this.ctx.font = `bold ${f.font||20}px Arial`; 
+                    this.ctx.fillText(f.t, f.x, f.y);
+                    this.ctx.globalAlpha = 1;
+                    return f.l > 0;
+                });
                 this.ctx.restore();
 
                 // Minimap
-                this.mmCtx.clearRect(0,0,150,150);
-                const ms = 150/this.mapSize; 
+                this.mmCtx.clearRect(0,0,150,150); const ms = 150/3000; 
+                this.mmCtx.beginPath(); this.mmCtx.arc(75, 75, 75, 0, Math.PI*2); this.mmCtx.fillStyle='#222'; this.mmCtx.fill();
+                this.mmCtx.fillStyle = '#444'; this.walls.forEach(w => this.mmCtx.fillRect(w.x*ms, w.y*ms, w.w*ms, w.h*ms));
+                // Storm on minimap
+                if(zr < 1500) {
+                    this.mmCtx.strokeStyle = '#f00'; 
+                    this.mmCtx.beginPath(); this.mmCtx.arc(75, 75, zr*ms, 0, Math.PI*2); this.mmCtx.stroke();
+                }
+
                 if(this.state.z) this.state.z.forEach(z => { this.mmCtx.strokeStyle = z.t==='rock'?'#f00':(z.t==='paper'?'#00f':'#0f0'); this.mmCtx.beginPath(); this.mmCtx.arc(z.x*ms, z.y*ms, 150*ms, 0, Math.PI*2); this.mmCtx.stroke(); });
-                if(this.state.p) this.state.p.forEach(p => { 
-                    if(p.a) { 
-                        if(p.inv && p.id !== this.myId) return; // Hide invisible on minimap too
-                        this.mmCtx.fillStyle = p.id===this.myId?'#fff':(p.t==='rock'?'#f00':(p.t==='paper'?'#00f':'#0f0')); 
-                        this.mmCtx.beginPath(); this.mmCtx.arc(p.x*ms, p.y*ms, p.id===this.myId?3:2, 0, Math.PI*2); this.mmCtx.fill(); 
-                    }
-                });
+                if(this.state.p) this.state.p.forEach(p => { if(p.a && (!p.inv || p.id===this.myId)) { this.mmCtx.fillStyle = p.id===this.myId?'#fff':'#f00'; this.mmCtx.beginPath(); this.mmCtx.arc(p.x*ms, p.y*ms, 2, 0, Math.PI*2); this.mmCtx.fill(); }});
             }
         };
         window.onload = () => app.init();
