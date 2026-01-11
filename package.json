@@ -1,7 +1,7 @@
 {
   "name": "neon-kpn-v2",
-  "version": "16.1.1",
-  "description": "Neon KPN - Minimap Fix",
+  "version": "16.6.0",
+  "description": "Neon KPN - Critical Render Fix",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

@@ -30,15 +30,56 @@
         
         .touch-zone { position: absolute; bottom: 40px; width: 140px; height: 140px; pointer-events: auto; }
         #touch-l { left: 40px; } 
-        #touch-r { right: 40px; display: flex; gap: 10px; align-items: flex-end; justify-content: flex-end; }
-        .skill-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; }
         
+        /* FIX: Buttons and PC Cooldowns above minimap */
+        #touch-r { 
+            position: absolute;
+            bottom: 180px; 
+            right: 20px; 
+            display: flex; 
+            gap: 15px; 
+            align-items: flex-end; 
+            justify-content: flex-end; 
+            pointer-events: auto;
+        }
+        
+        .skill-btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 3px solid #666; backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; transition: 0.2s; position: relative; overflow: hidden; }
+        .skill-btn.ready { border-color: #0f0; box-shadow: 0 0 15px rgba(0,255,0,0.5); }
+        
+        /* PC Cooldowns - Moved above minimap (same pos as touch-r) */
+        #cooldowns-pc { 
+            position: absolute; 
+            bottom: 180px; 
+            right: 20px; 
+            display: flex; 
+            gap: 15px; 
+            pointer-events: none; 
+        }
+        .cd-icon { width: 60px; height: 60px; border: 3px solid #444; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; background: rgba(0,0,0,0.5); position: relative; overflow: hidden; font-size: 24px; }
+        .cd-icon.ready { border-color: #0f0; box-shadow: 0 0 10px #0f0; }
+        .cd-fill { position: absolute; inset: 0; background: rgba(0,0,0,0.7); transform-origin: center; transition: 0.1s; }
+
+        /* Hide touch zones on PC */
         @media (pointer: fine) { .touch-zone { display: none !important; } }
+        /* Hide PC Cooldowns on Mobile */
+        @media (pointer: coarse) { #cooldowns-pc { display: none !important; } }
         
         #perk-ui { position: absolute; top: 20%; width: 100%; text-align: center; pointer-events: auto; display: none; }
         .perk-opt { display: inline-block; background: #1a1a2e; border: 1px solid #0ff; padding: 20px; margin: 10px; width: 160px; border-radius: 10px; cursor: pointer; transition: 0.2s; box-shadow: 0 0 15px rgba(0,255,255,0.1); }
 
-        #minimap-c { position: absolute; z-index: 5; background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 50%; overflow: hidden; pointer-events: none; bottom: 20px; right: 20px; width: 150px; height: 150px; }
+        #minimap-c { 
+            position: absolute; 
+            z-index: 5; 
+            background: rgba(0,0,0,0.5); 
+            border: 1px solid #444; 
+            border-radius: 50%; 
+            overflow: hidden; 
+            pointer-events: none; 
+            bottom: 20px; 
+            right: 20px; 
+            width: 150px; 
+            height: 150px;
+        }
         
         #chat-ui { position: absolute; bottom: 20px; left: 20px; width: 300px; height: 200px; pointer-events: auto; display: flex; flex-direction: column; }
         #chat-msgs { flex: 1; overflow-y: auto; text-shadow: 0 0 2px black; font-size: 12px; }
@@ -59,7 +100,7 @@
 
     <div id="s-login" class="ui-screen active">
         <h1 class="text-7xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">NEON KPN</h1>
-        <p class="text-gray-400 mb-8 tracking-widest text-xs">V16.1.1 (MINIMAP FIX)</p>
+        <p class="text-gray-400 mb-8 tracking-widest text-xs">V16.6 (RENDER FIX)</p>
         <div class="panel">
             <input id="nick" class="inp" placeholder="Twój Nick" maxlength="15">
             <div id="stats-prev" class="text-xs text-gray-500 mt-2 mb-2">Ładowanie statystyk...</div>
@@ -71,7 +112,6 @@
     <div id="s-manual" class="ui-screen">
         <div class="panel" style="max-width:800px; text-align:left;">
             <h1 class="text-3xl font-black mb-4 text-center">JAK GRAĆ?</h1>
-            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
                     <h3 class="text-xl font-bold text-yellow-400 mb-2">STEROWANIE</h3>
@@ -83,7 +123,6 @@
                         <li><b class="text-white">1-4:</b> Emotki</li>
                     </ul>
                 </div>
-                
                 <div>
                     <h3 class="text-xl font-bold text-blue-400 mb-2">ZASADY KPN</h3>
                     <ul class="list-disc pl-5 text-gray-300 space-y-1">
@@ -94,14 +133,11 @@
                     </ul>
                 </div>
             </div>
-
-            <h3 class="text-xl font-bold text-green-400 mt-4 mb-2">NOWOŚCI & TRYBY</h3>
+            <h3 class="text-xl font-bold text-green-400 mt-4 mb-2">NOWOŚCI V16.6</h3>
             <ul class="list-disc pl-5 text-gray-300 space-y-1 text-sm">
-                <li><strong class="text-white">LECZENIE:</strong> Odnawiasz zdrowie w strefach <span class="text-green-400 font-bold">(+)</span> oraz w <span class="text-yellow-400">BAZIE SWOJEGO KOLORU</span>.</li>
-                <li><strong class="text-white">KOTH:</strong> W trybie King of the Hill przejmuj środkową strefę, gdy pasuje do Twojego koloru, by zdobywać punkty.</li>
-                <li><strong class="text-white">LEVEL UP:</strong> Zbieraj kulki XP, aby wybierać ulepszenia (Perki).</li>
+                <li><strong class="text-white">RENDER FIX:</strong> Usunięto błąd znikających postaci.</li>
+                <li><strong class="text-white">UI FIX:</strong> Wszystkie przyciski są teraz nad minimapą.</li>
             </ul>
-
             <button class="btn btn-primary mt-6" onclick="app.screen('s-login')">ROZUMIEM, JAZDA!</button>
         </div>
     </div>
@@ -171,11 +207,19 @@
         <div id="bar-xp-c" class="hud-bar-c"><div id="bar-xp" class="fill bg-purple-500"></div></div>
         <div class="absolute bottom-[28px] left-1/2 -translate-x-1/2 text-[10px] text-gray-400" id="xp-text"></div>
         
-        <div id="touch-l" class="touch-zone"></div>
-        <div id="touch-r" class="touch-zone">
-            <div class="skill-btn" onmousedown="app.input.d=true" onmouseup="app.input.d=false" ontouchstart="app.input.d=true" ontouchend="app.input.d=false">⚡</div>
-            <div class="skill-btn" style="border-color:#ffd700; color:#ffd700;" onmousedown="app.input.s=true" onmouseup="app.input.s=false" ontouchstart="app.input.s=true" ontouchend="app.input.s=false">★</div>
+        <div id="cooldowns-pc" class="hidden md:flex">
+            <div id="cd-dash-pc" class="cd-icon">⚡<div class="cd-fill" id="fill-dash"></div><div class="text-[10px] absolute bottom-1 z-10">SPC</div></div>
+            <div id="cd-skill-pc" class="cd-icon">★<div class="cd-fill" id="fill-skill"></div><div class="text-[10px] absolute bottom-1 z-10">E</div></div>
         </div>
+
+        <div id="touch-l" class="touch-zone"></div>
+        
+        <!-- UI FIX: Buttons above minimap -->
+        <div id="touch-r">
+            <div class="skill-btn" id="btn-dash-m" onmousedown="app.input.d=true" onmouseup="app.input.d=false" ontouchstart="app.input.d=true" ontouchend="app.input.d=false">⚡</div>
+            <div class="skill-btn" id="btn-skill-m" style="border-color:#666; color:#ffd700;" onmousedown="app.input.s=true" onmouseup="app.input.s=false" ontouchstart="app.input.s=true" ontouchend="app.input.s=false">★</div>
+        </div>
+        
         <div id="perk-ui"><h2 class="text-3xl font-black text-yellow-400 drop-shadow-lg mb-4">LEVEL UP!</h2><div id="perk-list"></div></div>
         <canvas id="minimap-c" width="150" height="150"></canvas>
 
@@ -293,6 +337,20 @@
                             document.getElementById('kda-disp').innerText = `${me.kills} / ${me.deaths}`;
                             document.getElementById('xp-text').innerText = `${me.xp} / ${me.nxp} XP`;
                             if(me.pen) this.showPerks(); else document.getElementById('perk-ui').style.display = 'none';
+                            
+                            // UPDATE COOLDOWNS
+                            const updateCD = (val, max, elId, fillId) => {
+                                const el = document.getElementById(elId);
+                                const fill = document.getElementById(fillId);
+                                if(val <= 0) { el.classList.add('ready'); el.style.borderColor = '#0f0'; if(fill) fill.style.height='0%'; }
+                                else { el.classList.remove('ready'); el.style.borderColor = '#666'; if(fill) fill.style.height = ((val/max)*100)+'%'; }
+                            };
+                            
+                            updateCD(me.dcd, 60, 'cd-dash-pc', 'fill-dash');
+                            updateCD(me.scd, me.mscd, 'cd-skill-pc', 'fill-skill');
+                            
+                            updateCD(me.dcd, 60, 'btn-dash-m', null);
+                            updateCD(me.scd, me.mscd, 'btn-skill-m', null);
                         }
                     }
                     if(p.st.sz < this.mapSize) {
@@ -363,6 +421,12 @@
             },
             loop() { requestAnimationFrame(()=>this.loop()); if(this.sock) this.sock.emit('input', this.input); if(this.state.p && this.state.p.find(p=>p.id===this.myId && p.pen)) this.showPerks(); this.render(); this.frames++; },
             render() {
+                // FIX: Move 'ms' declaration to the top to prevent ReferenceError
+                const ms = 150/3000;
+                
+                // Ensure Alpha is reset to prevent invisible units
+                this.ctx.globalAlpha = 1;
+                
                 const w = window.innerWidth, h = window.innerHeight; this.ctx.fillStyle = '#0a0a12'; this.ctx.fillRect(0,0,w,h);
                 if(!this.state || !this.state.p) return;
                 this.ctx.save(); this.ctx.translate(w/2, h/2); this.ctx.scale(this.cam.z, this.cam.z); this.ctx.translate(-this.cam.x, -this.cam.y);
@@ -395,18 +459,22 @@
                     this.ctx.fillStyle = '#0f0'; this.ctx.font = '30px Arial'; this.ctx.fillText('+', h.x-10, h.y+10);
                 });
 
-                if(this.state.z) this.state.z.forEach(z => { this.ctx.fillStyle = z.t==='rock'?'#f00':(z.t==='paper'?'#00f':'#0f0'); this.ctx.globalAlpha=0.1; this.ctx.beginPath(); this.ctx.arc(z.x,z.y,150,0,Math.PI*2); this.ctx.fill(); this.ctx.globalAlpha=1; });
+                if(this.state.z) this.state.z.forEach(z => { this.ctx.fillStyle = z.t==='rock'?'#f00':(z.t==='paper'?'#00f':'#0f0'); this.ctx.globalAlpha=0.1; this.ctx.beginPath(); this.ctx.arc(z.x*ms, z.y*ms, 150*ms, 0, Math.PI*2); this.ctx.fill(); this.ctx.globalAlpha=1; });
                 this.state.o.forEach(o => { this.ctx.fillStyle='#ffd700'; this.ctx.shadowColor='#ffd700'; this.ctx.shadowBlur=10; this.ctx.beginPath(); this.ctx.arc(o[0],o[1],5,0,Math.PI*2); this.ctx.fill(); this.ctx.shadowBlur=0; });
 
                 this.ctx.fillStyle = '#222'; this.ctx.strokeStyle = '#0ff'; this.ctx.lineWidth = 3;
                 this.walls.forEach(wa => { this.ctx.shadowBlur = 15; this.ctx.shadowColor = '#0ff'; this.ctx.fillRect(wa.x, wa.y, wa.w, wa.h); this.ctx.strokeRect(wa.x, wa.y, wa.w, wa.h); this.ctx.shadowBlur = 0; });
 
-                this.ctx.restore(); // End Clip
+                this.ctx.restore(); // End Clip (Camera transform still active)
                 this.ctx.beginPath(); this.ctx.arc(1500, 1500, 1500, 0, Math.PI*2); this.ctx.strokeStyle = '#444'; this.ctx.lineWidth = 10; this.ctx.stroke();
 
                 const drawUnit = (x,y,t,r,inv,my,invuln) => {
+                    // Reset Alpha at start of unit draw
+                    this.ctx.globalAlpha = 1;
+                    
                     const c = t==='rock'?'#ef4444':(t==='paper'?'#3b82f6':(t==='zombie'?'#777':'#22c55e'));
                     this.ctx.fillStyle=c; 
+                    
                     if(inv) this.ctx.globalAlpha = my ? 0.5 : 0; 
                     if(invuln) this.ctx.globalAlpha = (Date.now()%200 < 100) ? 0.5 : 1; 
 
@@ -455,10 +523,11 @@
                     this.ctx.globalAlpha = 1;
                     return f.l > 0;
                 });
-                this.ctx.restore();
+                
+                this.ctx.restore(); // Restore camera transform
 
                 // Minimap
-                this.mmCtx.clearRect(0,0,150,150); const ms = 150/3000; 
+                this.mmCtx.clearRect(0,0,150,150); 
                 this.mmCtx.fillStyle='#111'; this.mmCtx.beginPath(); this.mmCtx.arc(75, 75, 75, 0, Math.PI*2); this.mmCtx.fill(); // Map BG
                 
                 this.mmCtx.fillStyle = '#444'; this.walls.forEach(w => this.mmCtx.fillRect(w.x*ms, w.y*ms, w.w*ms, w.h*ms));

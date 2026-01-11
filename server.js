@@ -1,7 +1,7 @@
 
 /**
  * NEON KPN - SERVER CORE
- * v16.1.1 (Minimap Fix)
+ * v16.6.0 (Critical Render Fix)
  */
 
 const express = require('express');
@@ -439,9 +439,21 @@ class Room {
         this.ticks++;
         if(this.ticks % 40 === 0) this.spawnBot();
         
+        // RESPAWN KULEK Z EXPEM
+        if (this.orbs.length < 100) {
+            // Standardowy powolny respawn
+            if (Math.random() < 0.1) this.spawnOrb();
+        }
+
         if (Date.now() - this.startTime > CFG.SHRINK_START_TIME) {
             if (this.safeZoneRadius > CFG.MIN_ZONE_RADIUS) this.safeZoneRadius -= CFG.SHRINK_SPEED;
             if(this.ticks % 100 === 0 && this.minions.length < CFG.MAX_BOTS + 10) this.spawnZombie();
+            
+            // PRZYSPIESZONY RESPAWN KULEK W CZASIE BURZY
+            // Zwiększamy limit do 150 i spawnujemy znacznie częściej
+            if (this.ticks % 10 === 0 && this.orbs.length < 150) {
+                this.spawnOrb();
+            }
         }
         
         if(this.config.mode === 'koth') {
@@ -704,7 +716,7 @@ setInterval(() => {
                 pen: p.pendingPerk ? 1 : 0, perks: p.perks, scd: p.cdSkill, mscd: p.maxCdSkill,
                 score: p.score, kills: p.kills, deaths: p.deaths, inv: p.invisible,
                 inBush: p.inBush, rw: p.roomWins,
-                invuln: p.invuln > 0 
+                invuln: p.invuln > 0, dcd: p.cdDash 
             })),
             m: r.minions.map(m => ({ x: ~~m.x, y: ~~m.y, t: m.type })),
             o: r.orbs.map(o => ([~~o.x, ~~o.y])),
