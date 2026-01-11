@@ -70,14 +70,39 @@
 
     <div id="s-manual" class="ui-screen">
         <div class="panel" style="max-width:800px; text-align:left;">
-            <h1 class="text-3xl font-black mb-4 text-center">AKTUALIZACJA V16.1.1</h1>
-            <ul class="list-disc pl-5 my-2 text-gray-300 space-y-2">
-                <li><strong class="text-green-400">MINIMAPA:</strong> Poprawiono wyświetlanie krzaków i apteczek.</li>
-                <li><strong class="text-yellow-400">CZĄSTECZKI:</strong> System efektów wizualnych.</li>
-                <li><strong class="text-red-400">GLITCH:</strong> Zombie są teraz cyfrowymi błędami.</li>
-                <li><strong class="text-blue-400">PULS:</strong> Mapa pulsuje w rytm gry.</li>
+            <h1 class="text-3xl font-black mb-4 text-center">JAK GRAĆ?</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <h3 class="text-xl font-bold text-yellow-400 mb-2">STEROWANIE</h3>
+                    <ul class="list-disc pl-5 text-gray-300 space-y-1">
+                        <li><b class="text-white">WSAD / Joystick:</b> Poruszanie się</li>
+                        <li><b class="text-white">SPACJA / Przycisk ⚡:</b> Dash (Sprint)</li>
+                        <li><b class="text-white">E / Przycisk ★:</b> Umiejętność Specjalna</li>
+                        <li><b class="text-white">Enter:</b> Czat</li>
+                        <li><b class="text-white">1-4:</b> Emotki</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold text-blue-400 mb-2">ZASADY KPN</h3>
+                    <ul class="list-disc pl-5 text-gray-300 space-y-1">
+                        <li><span class="text-red-500">🪨 KAMIEŃ</span> bije <span class="text-green-500">✂️ NOŻYCE</span></li>
+                        <li><span class="text-green-500">✂️ NOŻYCE</span> biją <span class="text-blue-500">📄 PAPIER</span></li>
+                        <li><span class="text-blue-500">📄 PAPIER</span> bije <span class="text-red-500">🪨 KAMIEŃ</span></li>
+                        <li>Unikaj <span class="text-purple-500">BURZY</span> (czerwona strefa)!</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-bold text-green-400 mt-4 mb-2">NOWOŚCI & TRYBY</h3>
+            <ul class="list-disc pl-5 text-gray-300 space-y-1 text-sm">
+                <li><strong class="text-white">LECZENIE:</strong> Odnawiasz zdrowie w strefach <span class="text-green-400 font-bold">(+)</span> oraz w <span class="text-yellow-400">BAZIE SWOJEGO KOLORU</span>.</li>
+                <li><strong class="text-white">KOTH:</strong> W trybie King of the Hill przejmuj środkową strefę, gdy pasuje do Twojego koloru, by zdobywać punkty.</li>
+                <li><strong class="text-white">LEVEL UP:</strong> Zbieraj kulki XP, aby wybierać ulepszenia (Perki).</li>
             </ul>
-            <button class="btn btn-primary mt-4" onclick="app.screen('s-login')">JAZDA!</button>
+
+            <button class="btn btn-primary mt-6" onclick="app.screen('s-login')">ROZUMIEM, JAZDA!</button>
         </div>
     </div>
 
