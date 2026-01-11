@@ -1,7 +1,7 @@
 {
   "name": "neon-kpn-v2",
-  "version": "16.0.0",
-  "description": "Neon KPN - Particles & Glitch Update",
+  "version": "16.1.0",
+  "description": "Neon KPN - Base Healing Update",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

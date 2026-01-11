@@ -1,7 +1,7 @@
 
 /**
  * NEON KPN - SERVER CORE
- * v16.0.0 (Nonagon Map + Particles)
+ * v16.1.0 (Base Healing)
  */
 
 const express = require('express');
@@ -186,7 +186,7 @@ class Player extends Entity {
 
             if(this.input.d && this.cdDash <= 0) { 
                 this.cdDash = 60; spd = s.dash; 
-                io.to(room.id).emit('fx', {t:'part', x:this.x, y:this.y, c:'#fff', n: 5}); // Dash particles
+                io.to(room.id).emit('fx', {t:'part', x:this.x, y:this.y, c:'#fff', n: 5}); 
             }
             if(this.cdDash > 0) this.cdDash--;
 
@@ -218,15 +218,27 @@ class Player extends Entity {
             }
         }
 
-        // Healing Zones
+        // HEALING (Spots + Bases)
         if(room.ticks % 10 === 0) { 
+            let shouldHeal = false;
+            
+            // 1. Apteczki
             for(const h of room.healSpots) {
-                if(Math.hypot(this.x - h.x, this.y - h.y) < h.r) {
-                    if(this.hp < this.maxHp) {
-                        this.hp = Math.min(this.maxHp, this.hp + 5);
-                        io.to(room.id).emit('fx', {t:'dmg', x:this.x, y:this.y, v:5, c:'#0f0'}); 
+                if(Math.hypot(this.x - h.x, this.y - h.y) < h.r) shouldHeal = true;
+            }
+            
+            // 2. Bazy (Jeśli typ się zgadza)
+            if(!shouldHeal) {
+                for(const z of room.zones) {
+                    if(z.t === this.type && Math.hypot(this.x - z.x, this.y - z.y) < 160) {
+                        shouldHeal = true;
                     }
                 }
+            }
+
+            if(shouldHeal && this.hp < this.maxHp) {
+                this.hp = Math.min(this.maxHp, this.hp + 5);
+                io.to(room.id).emit('fx', {t:'dmg', x:this.x, y:this.y, v:5, c:'#0f0'}); 
             }
         }
 
