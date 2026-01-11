@@ -1,7 +1,7 @@
 {
-  "name": "neon-kpn-geometric",
-  "version": "15.0.0",
-  "description": "Neon KPN - Geometric Update (Nonagon Map)",
+  "name": "neon-kpn-v2",
+  "version": "16.0.0",
+  "description": "Neon KPN - Particles & Glitch Update",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

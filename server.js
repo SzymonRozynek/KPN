@@ -1,7 +1,7 @@
 
 /**
- * NEON KPN GEOMETRIC - SERVER CORE
- * v15.0.0 (Nonagon Map Layout & Circular Physics)
+ * NEON KPN - SERVER CORE
+ * v16.0.0 (Nonagon Map + Particles)
  */
 
 const express = require('express');
@@ -9,64 +9,25 @@ const http = require('http');
 const { Server } = require("socket.io");
 const path = require('path');
 
-// --- GENEROWANIE MAPY (DZIEWIĘCIOKĄT) ---
-const MAP_R = 1500;
-const CENTER = MAP_R;
-const GEN_WALLS = [];
-const GEN_BUSHES = [];
-const GEN_ZONES = [];
-
-// Generuj 9 punktów na okręgu (co 40 stopni)
-for(let i = 0; i < 9; i++) {
-    // Przesunięcie -90 stopni, żeby wierzchołek 0 był na górze (12:00)
-    const angleDeg = (i * 40) - 90; 
-    const angleRad = angleDeg * (Math.PI / 180);
-    const dist = 1100; // Odległość od środka
-    
-    const x = CENTER + Math.cos(angleRad) * dist;
-    const y = CENTER + Math.sin(angleRad) * dist;
-
-    // Co trzeci wierzchołek to BAZA (0, 3, 6)
-    if (i % 3 === 0) {
-        // Krzak w bazie
-        GEN_BUSHES.push({ x: x, y: y, r: 200 });
-        
-        // Strefa zmian w tym samym miejscu
-        let type = 'rock'; // 0 = Rock (Top)
-        if (i === 3) type = 'scissors'; // 3 = Scissors (Right Bottom)
-        if (i === 6) type = 'paper';    // 6 = Paper (Left Bottom)
-        
-        GEN_ZONES.push({ t: type, x: x, y: y });
-    } else {
-        // Na pozostałych wierzchołkach ŚCIANY
-        // Rotacja ściany, żeby była prostopadła do promienia? Nie, w canvasie mamy tylko proste AABB
-        // Dajemy bloki w układzie poziomym lub pionowym w zależności od pozycji
-        if (i === 1 || i === 8) GEN_WALLS.push({ x: x-40, y: y-100, w: 80, h: 200 }); // Pionowe (górne boki)
-        else if (i === 4 || i === 5) GEN_WALLS.push({ x: x-40, y: y-100, w: 80, h: 200 }); // Pionowe (dolne boki)
-        else GEN_WALLS.push({ x: x-100, y: y-40, w: 200, h: 80 }); // Poziome (boki)
-    }
-}
-// Dodatkowy krzak na środku (Arena Centralna)
-GEN_BUSHES.push({ x: CENTER, y: CENTER, r: 250 });
-
-
 const CFG = {
     PORT: process.env.PORT || 3000,
     TICK_RATE: 30,
     MAP_RADIUS: 1500,
     GRID_SIZE: 250, 
     MAX_PLAYERS: 30,
-    MAX_BOTS: 40, 
-    WIN_SCORE: 1000,
-    SHRINK_START_TIME: 60000, 
-    SHRINK_SPEED: 0.6,        
+    MAX_BOTS: 50, 
+    WIN_SCORE: 3000,
+    SHRINK_START_TIME: 120000, 
+    SHRINK_SPEED: 0.25,        
     MIN_ZONE_RADIUS: 300,     
     STORM_DAMAGE: 5,
     PHYSICS_STEPS: 3, 
     
-    WALLS: GEN_WALLS,
-    BUSHES: GEN_BUSHES,
-    ZONES: GEN_ZONES,
+    // DANE GENEROWANE PRZEZ PYTHON
+    WALLS: [{x: 2340, y: 1440, w: 120, h: 120}, {x: 2129, y: 2018, w: 120, h: 120}, {x: 1596, y: 2326, w: 120, h: 120}, {x: 990, y: 2219, w: 120, h: 120}, {x: 594, y: 1747, w: 120, h: 120}, {x: 594, y: 1132, w: 120, h: 120}, {x: 989, y: 660, w: 120, h: 120}, {x: 1596, y: 553, w: 120, h: 120}, {x: 2129, y: 861, w: 120, h: 120}],
+    BUSHES: [{x: 2674, y: 1927, r: 130}, {x: 2125, y: 2582, r: 130}, {x: 1282, y: 2731, r: 130}, {x: 542, y: 2303, r: 130}, {x: 250, y: 1500, r: 130}, {x: 542, y: 696, r: 130}, {x: 1282, y: 268, r: 130}, {x: 2125, y: 417, r: 130}, {x: 2674, y: 1072, r: 130}],
+    ZONES: [{ t: 'rock', x: 0.500, y: 0.733 }, { t: 'paper', x: 0.298, y: 0.383 }, { t: 'scissors', x: 0.702, y: 0.383 }],
+    HEAL_SPOTS: [{x: 1500, y: 1100, r: 90}, {x: 1846, y: 1700, r: 90}, {x: 1153, y: 1700, r: 90}],
     
     STATS: {
         rock: { spd: 7.0, hp: 220, dash: 20, skillCd: 300, skillDur: 20, passive: 'thorns' },
@@ -80,8 +41,8 @@ const CFG = {
         tank: { n: 'Tytanowa Powłoka', d: '+50% HP, -10% Speed' },
         speed: { n: 'Nitro', d: '+20% Speed' }
     },
-    R_ZONE: 180, // Nieco większe strefy bazowe
-    MAGNET_RANGE: 150
+    R_ZONE: 180, 
+    MAGNET_RANGE: 200
 };
 
 const BEATS = { 'rock': 'scissors', 'paper': 'rock', 'scissors': 'paper', 'zombie': 'all' }; 
@@ -114,7 +75,8 @@ class Entity {
         this.dead = false; this.stun = 0;
         this.invisible = false; this.inBush = false;
         this.emote = null; this.emoteTimer = 0;
-        this.buffs = { shield: false, speed: 0 }; 
+        this.invuln = 0;
+        this.skillActive = 0;
     }
     
     move(room) {
@@ -149,8 +111,7 @@ class Entity {
     }
 
     takeDamage(amt, source) {
-        if(!this.buffs) this.buffs = { shield: false, speed: 0 };
-        if(this.buffs.shield) { this.buffs.shield = false; return false; }
+        if(this.invuln > 0) return false;
         
         if(this.type === 'rock' && source && source instanceof Entity && source.type !== 'zombie') {
             source.hp -= amt * 0.3; 
@@ -167,7 +128,7 @@ class Player extends Entity {
         super(id, type, 0, 0, 30);
         this.nick = nick.substring(0, 15).replace(/[^a-zA-Z0-9 ]/g, "");
         this.active = false;
-        this.lvl = 1; this.xp = 0; this.nextXp = 100;
+        this.lvl = 1; this.xp = 0; this.nextXp = 50;
         this.score = 0; this.kills = 0; this.deaths = 0;
         this.roomWins = 0; 
         this.perks = []; this.pendingPerk = false;
@@ -175,7 +136,6 @@ class Player extends Entity {
         this.cdDash = 0; this.cdSkill = 0; this.maxCdSkill = CFG.STATS[type].skillCd;
         this.applyStats();
     }
-    
     applyStats() {
         const base = CFG.STATS[this.type];
         if(!base) return;
@@ -186,32 +146,33 @@ class Player extends Entity {
         this.hp = Math.min(this.hp, this.maxHp);
         if(this.hp <= 0) this.hp = this.maxHp;
     }
-
     applyPerk(pid) {
         if(!this.pendingPerk) return;
-        this.perks.push(pid); this.pendingPerk = false; 
-        this.applyStats();
-        this.hp = this.maxHp;
+        this.perks.push(pid); this.pendingPerk = false; this.applyStats(); this.hp = this.maxHp;
     }
-
     addXp(amount) {
         this.xp += amount;
         if(this.xp >= this.nextXp) {
             this.lvl++;
             this.xp -= this.nextXp;
-            this.nextXp = Math.floor(this.nextXp * 1.4);
+            this.nextXp = Math.floor(this.nextXp * 1.3);
             this.hp = this.maxHp; 
-            if([5, 10].includes(this.lvl)) this.pendingPerk = true;
+            if([5, 10, 15].includes(this.lvl)) this.pendingPerk = true;
         }
     }
-
     update(room) {
-        if(!this.active || this.dead) return;
+        if(!this.active) return;
+        if(this.dead) return;
+
         if(this.emoteTimer > 0) this.emoteTimer--; else this.emote = null;
+        if(this.invuln > 0) this.invuln--;
 
         if(this.stun > 0) { 
             this.stun--; 
         } else {
+            this.dx *= 0.85; 
+            this.dy *= 0.85;
+
             if(this.skillActive > 0) { this.skillActive--; this.invisible = true; } 
             else { this.invisible = this.inBush; }
 
@@ -223,7 +184,10 @@ class Player extends Entity {
             if(this.perks.includes('tank')) spd *= 0.9;
             if(this.skillActive > 0 && this.type === 'paper') spd *= 1.4;
 
-            if(this.input.d && this.cdDash <= 0) { this.cdDash = 60; spd = s.dash; }
+            if(this.input.d && this.cdDash <= 0) { 
+                this.cdDash = 60; spd = s.dash; 
+                io.to(room.id).emit('fx', {t:'part', x:this.x, y:this.y, c:'#fff', n: 5}); // Dash particles
+            }
             if(this.cdDash > 0) this.cdDash--;
 
             if(this.input.s && this.cdSkill <= 0) {
@@ -245,6 +209,7 @@ class Player extends Entity {
             }
         }
         
+        // Storm Damage
         if(room.ticks % 15 === 0) {
             const dist = Math.hypot(room.mapRadius - this.x, room.mapRadius - this.y);
             if(dist > room.safeZoneRadius) {
@@ -252,6 +217,19 @@ class Player extends Entity {
                 io.to(room.id).emit('fx', {t:'dmg', x:this.x, y:this.y, v:CFG.STORM_DAMAGE, c:'#555'});
             }
         }
+
+        // Healing Zones
+        if(room.ticks % 10 === 0) { 
+            for(const h of room.healSpots) {
+                if(Math.hypot(this.x - h.x, this.y - h.y) < h.r) {
+                    if(this.hp < this.maxHp) {
+                        this.hp = Math.min(this.maxHp, this.hp + 5);
+                        io.to(room.id).emit('fx', {t:'dmg', x:this.x, y:this.y, v:5, c:'#0f0'}); 
+                    }
+                }
+            }
+        }
+
         this.move(room);
     }
 }
@@ -296,7 +274,6 @@ class Minion extends Entity {
         }
         
         if(neighbors>0) { tx += (sepX/neighbors)*2; ty += (sepY/neighbors)*2; }
-        
         if(this.type !== 'zombie' && room.safeZoneRadius < room.mapRadius) {
              const cx = room.mapRadius, cy = room.mapRadius;
              if(Math.hypot(cx-this.x, cy-this.y) > room.safeZoneRadius) { tx += (cx-this.x)*0.02; ty += (cy-this.y)*0.02; }
@@ -321,9 +298,9 @@ class Room {
         this.safeZoneRadius = CFG.MAP_RADIUS;
         this.ticks = 0;
         this.walls = CFG.WALLS; this.bushes = CFG.BUSHES;
+        this.healSpots = CFG.HEAL_SPOTS;
         this.kothTimer = 0; this.kothZone = { x: 1500, y: 1500, t: 'rock' };
-        this.zones = JSON.parse(JSON.stringify(CFG.ZONES)); // Copy zones
-        this.reset();
+        this.initZones(); this.reset();
     }
     
     checkWall(x, y, r) {
@@ -366,6 +343,11 @@ class Room {
             if(!this.checkWall(nx, ny, 30)) return {x:nx, y:ny};
         }
         return {x: 1500, y: 1500}; 
+    }
+
+    initZones() { 
+        if (this.config.mode === 'koth') { this.zones = [this.kothZone]; } 
+        else { this.zones = CFG.ZONES.map(z => ({ t: z.t, x: z.x * 3000, y: z.y * 3000 })); }
     }
     
     reset() {
@@ -421,11 +403,7 @@ class Room {
     
     start() {
         this.active = true; this.startTime = Date.now(); this.safeZoneRadius = this.mapRadius;
-        
-        // Reset KOTH zone
-        if (this.config.mode === 'koth') { this.zones = [this.kothZone]; } 
-        else { this.zones = JSON.parse(JSON.stringify(CFG.ZONES)); }
-
+        this.initZones();
         Object.values(this.players).forEach(p => {
             p.active = true; p.invisible = false;
             let tx, ty;
@@ -440,6 +418,7 @@ class Room {
             }
             const spot = this.getSafeSpawn(tx, ty); p.x = spot.x; p.y = spot.y;
             p.applyStats();
+            p.invuln = 90; 
         });
         io.to(this.id).emit('gameStart');
     }
@@ -465,7 +444,10 @@ class Room {
 
         this.grid.clear();
         this.minions.forEach(m => this.grid.insert(m));
-        Object.values(this.players).forEach(p => { if(p.active && !p.dead) this.grid.insert(p); });
+        Object.values(this.players).forEach(p => { 
+            if(p.dead) this.handleDeath(p, null);
+            if(p.active && !p.dead) this.grid.insert(p); 
+        });
 
         Object.values(this.players).forEach(p => p.update(this));
         this.minions.forEach(m => m.ai(this, this.grid));
@@ -475,7 +457,6 @@ class Room {
         if(this.ticks % 30 === 0) this.checkWin();
     }
     handleCollisions() {
-        // Orb Magnetism Logic inside collisions for efficiency
         Object.values(this.players).filter(p=>p.active && !p.dead).forEach(p => {
             for(let i = this.orbs.length - 1; i >= 0; i--) {
                 const o = this.orbs[i];
@@ -484,7 +465,7 @@ class Room {
                     if(!this.checkWall((p.x+o.x)/2, (p.y+o.y)/2, 5)) {
                          o.x += (p.x - o.x) * 0.2; o.y += (p.y - o.y) * 0.2;
                          if(d < p.r + 10) {
-                            p.score += 10; p.addXp(15); this.orbs.splice(i, 1);
+                            p.score += 10; p.addXp(40); this.orbs.splice(i, 1);
                             if(Math.random() > 0.5) this.spawnOrb();
                             io.to(this.id).emit('fx', {t:'dmg', x:p.x, y:p.y, v:10, c:'#ffd700'});
                          }
@@ -513,6 +494,44 @@ class Room {
             }
         }
     }
+    
+    handleDeath(loser, winner) {
+        if(loser instanceof Player) {
+             const killerType = winner ? winner.type : "storm";
+             io.to(this.id).emit('fx', {t:'kill', x:loser.x, y:loser.y, c:killerType, msg:`${killerType.toUpperCase()} eliminuje ${loser.nick} (-100 PKT)`});
+             io.to(this.id).emit('fx', {t:'part', x:loser.x, y:loser.y, c:'#f00', n:20}); // Death particles
+
+             loser.score = Math.max(0, loser.score - 100);
+             loser.deaths++; 
+             
+             // RESET ALL STATUS
+             loser.dead = false; loser.hp = loser.maxHp; 
+             loser.stun = 0; loser.streak = 0; loser.invisible = false; 
+             loser.invuln = 90; // 3 sec shield
+             
+             // Respawn logic
+             let tx, ty;
+             if(this.config.mode === 'koth') {
+                  const a = Math.random() * Math.PI * 2; tx = 1500 + Math.cos(a) * 1200; ty = 1500 + Math.sin(a) * 1200;
+             } else {
+                  const zone = this.zones.find(z => z.t === loser.type);
+                  if(zone) { tx = zone.x; ty = zone.y; } else { tx = this.mapRadius; ty = this.mapRadius; }
+             }
+             const spot = this.getSafeSpawn(tx, ty);
+             loser.x = spot.x; loser.y = spot.y;
+             loser.dx = 0; loser.dy = 0; 
+             
+             if (winner instanceof Player) {
+                 winner.score += 50; winner.kills++; winner.streak++; winner.lastKillTime = Date.now(); winner.addXp(300);
+                 if(winner.streak >= 2) io.to(this.id).emit('fx', {t:'streak', k:winner.streak, n:winner.nick});
+             }
+        } else {
+             if(winner instanceof Player) { winner.addXp(40); winner.score += 50; }
+             io.to(this.id).emit('fx', {t:'conv', x:loser.x, y:loser.y, c:winner ? winner.type : 'storm'});
+             io.to(this.id).emit('fx', {t:'part', x:loser.x, y:loser.y, c:'#777', n:10});
+        }
+    }
+
     resolveCombat(winner, loser) {
         if (winner.type === 'zombie') { loser.takeDamage(10, winner); return; }
         if (loser.type === 'zombie') { loser.takeDamage(20, winner); return; }
@@ -535,29 +554,7 @@ class Room {
             if(loser instanceof Player) loser.invisible = false;
         }
         if(loser.dead) {
-            if(loser instanceof Player) {
-                io.to(this.id).emit('fx', {t:'kill', x:loser.x, y:loser.y, c:winner.type, msg:`${winner.type} eliminuje ${loser.nick}`});
-                loser.score = Math.max(0, loser.score - 100);
-                loser.deaths++; loser.dead = false; loser.hp = loser.maxHp; loser.stun = 0; loser.streak = 0; loser.invisible = false;
-                
-                let tx, ty;
-                if(this.config.mode === 'koth') {
-                     const a = Math.random() * Math.PI * 2; tx = 1500 + Math.cos(a) * 1200; ty = 1500 + Math.sin(a) * 1200;
-                } else {
-                     const zone = this.zones.find(z => z.t === loser.type);
-                     if(zone) { tx = zone.x; ty = zone.y; } else { tx = this.mapRadius; ty = this.mapRadius; }
-                }
-                const spot = this.getSafeSpawn(tx, ty);
-                loser.x = spot.x; loser.y = spot.y;
-                
-                if (winner instanceof Player) {
-                    winner.score += 50; winner.kills++; winner.streak++; winner.lastKillTime = Date.now(); winner.addXp(100);
-                    if(winner.streak >= 2) io.to(this.id).emit('fx', {t:'streak', k:winner.streak, n:winner.nick});
-                }
-            } else {
-                if(winner instanceof Player) { winner.addXp(40); winner.score += 50; }
-                io.to(this.id).emit('fx', {t:'conv', x:loser.x, y:loser.y, c:winner.type});
-            }
+            this.handleDeath(loser, winner);
         }
     }
     aoe(owner, r, effect) {
@@ -619,11 +616,13 @@ class Room {
     }
 }
 
+// --- SERVER INIT ---
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static(path.join(__dirname, 'public')));
+
 const rooms = {};
 rooms['public'] = new Room('public', 'Arena Publiczna', { max: 25, mode: 'play' });
 
@@ -647,15 +646,40 @@ io.on('connection', (socket) => {
         socket.emit('joined', { 
             id: socket.id, host: r.hostId === socket.id, w: 3000, h: 3000, 
             perks: CFG.PERKS, winScore: CFG.WIN_SCORE,
-            walls: r.walls, bushes: r.bushes 
+            walls: r.walls, bushes: r.bushes, healSpots: CFG.HEAL_SPOTS 
         });
+        
+        if(r.active) {
+            r.players[socket.id].active = true;
+            let tx, ty;
+            if(r.config.mode === 'koth') {
+                const a = Math.random() * Math.PI * 2; tx = 1500 + Math.cos(a) * 1200; ty = 1500 + Math.sin(a) * 1200;
+            } else {
+                const zone = r.zones.find(z => z.t === r.players[socket.id].type);
+                if(zone) {
+                    const a = Math.random() * Math.PI * 2; const dist = Math.random() * (CFG.R_ZONE * 0.7);
+                    tx = zone.x + Math.cos(a)*dist; ty = zone.y + Math.sin(a)*dist;
+                } else { tx = r.mapRadius; ty = r.mapRadius; }
+            }
+            const spot = r.getSafeSpawn(tx, ty);
+            r.players[socket.id].x = spot.x; r.players[socket.id].y = spot.y;
+            r.players[socket.id].invuln = 90; // Invuln on drop-in too
+            socket.emit('gameStart');
+        }
     });
-    socket.on('setType', (t) => { if(curRoom && !curRoom.active) curRoom.players[socket.id].type = t; });
+    socket.on('setType', (t) => { if(curRoom && !curRoom.active && CFG.STATS[t]) curRoom.players[socket.id].type = t; });
     socket.on('hostStart', () => { if(curRoom && curRoom.hostId === socket.id && !curRoom.active) curRoom.start(); });
     socket.on('input', (d) => { const p = curRoom?.players[socket.id]; if(p) { const len = Math.hypot(d.x, d.y); if(len > 1.01) { d.x /= len; d.y /= len; } p.input = d; } });
     socket.on('perk', (pid) => { const p = curRoom?.players[socket.id]; if(p) p.applyPerk(pid); });
     socket.on('emote', (eid) => { const p = curRoom?.players[socket.id]; if(p) { p.emote = eid; p.emoteTimer = 60; io.to(curRoom.id).emit('fx', {t:'emote', id:p.id, e:eid}); } });
-    socket.on('disconnect', () => { if(curRoom) { delete curRoom.players[socket.id]; if(curRoom.hostId === socket.id) curRoom.hostId = Object.keys(curRoom.players)[0]; if(Object.keys(curRoom.players).length === 0 && curRoom.id !== 'public') delete rooms[curRoom.id]; } });
+    socket.on('chat', (msg) => { const p = curRoom?.players[socket.id]; if(p && msg && msg.length <= 50) io.to(curRoom.id).emit('chatMsg', { n: p.nick, m: msg }); });
+    socket.on('disconnect', () => {
+        if(curRoom) {
+            delete curRoom.players[socket.id];
+            if(curRoom.hostId === socket.id) curRoom.hostId = Object.keys(curRoom.players)[0];
+            if(Object.keys(curRoom.players).length === 0 && curRoom.id !== 'public') delete rooms[curRoom.id];
+        }
+    });
 });
 
 setInterval(() => {
@@ -666,7 +690,9 @@ setInterval(() => {
                 id: p.id, x: ~~p.x, y: ~~p.y, t: p.type, a: p.active, d: p.dead, n: p.nick,
                 hp: ~~p.hp, mhp: ~~p.maxHp, lvl: p.lvl, xp: ~~p.xp, nxp: p.nextXp,
                 pen: p.pendingPerk ? 1 : 0, perks: p.perks, scd: p.cdSkill, mscd: p.maxCdSkill,
-                score: p.score, kills: p.kills, deaths: p.deaths, inv: p.invisible, inBush: p.inBush, rw: p.roomWins 
+                score: p.score, kills: p.kills, deaths: p.deaths, inv: p.invisible,
+                inBush: p.inBush, rw: p.roomWins,
+                invuln: p.invuln > 0 
             })),
             m: r.minions.map(m => ({ x: ~~m.x, y: ~~m.y, t: m.type })),
             o: r.orbs.map(o => ([~~o.x, ~~o.y])),
@@ -679,6 +705,6 @@ setInterval(() => {
 
 const startServer = (port) => {
     server.once('error', (e) => { if(e.code === 'EADDRINUSE') startServer(port+1); });
-    server.listen(port, () => console.log(`🚀 NEON GEOMETRIC running on port ${port}`));
+    server.listen(port, () => console.log(`🚀 NEON KPN v16 running on port ${port}`));
 };
 startServer(CFG.PORT);

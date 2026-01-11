@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon KPN: GEOMETRIC</title>
+    <title>Neon KPN - Particles</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;900&display=swap');
@@ -40,16 +40,26 @@
 
         #minimap-c { position: absolute; z-index: 5; background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 50%; overflow: hidden; pointer-events: none; bottom: 20px; right: 20px; width: 150px; height: 150px; }
         
+        #chat-ui { position: absolute; bottom: 20px; left: 20px; width: 300px; height: 200px; pointer-events: auto; display: flex; flex-direction: column; }
+        #chat-msgs { flex: 1; overflow-y: auto; text-shadow: 0 0 2px black; font-size: 12px; }
+        #chat-in { background: rgba(0,0,0,0.5); border: 1px solid #444; color: white; padding: 5px; outline: none; display: none; }
+        
+        #perf { position: absolute; top: 5px; left: 5px; font-size: 10px; color: #0f0; }
+
         .toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,0,0,0.8); padding: 10px 20px; border-radius: 20px; font-weight: bold; animation: fadeUp 3s forwards; }
         @keyframes fadeUp { 0% {opacity:0; transform:translate(-50%, 20px);} 10% {opacity:1; transform:translate(-50%, 0);} 80% {opacity:1;} 100% {opacity:0;} }
+        
+        #btn-fs { position: fixed; top: 20px; right: 20px; z-index: 100; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.2); color: white; width: 40px; height: 40px; border-radius: 8px; font-size: 20px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        #btn-fs:hover { background: rgba(255, 255, 255, 0.1); border-color: white; }
     </style>
 </head>
 <body>
-    <div id="toasts" style="position: absolute; top: 20px; width: 100%; text-align: center; z-index: 50; pointer-events: none;"></div>
+    <div id="toasts"></div>
+    <button id="btn-fs" onclick="toggleFullScreen()">⛶</button>
 
     <div id="s-login" class="ui-screen active">
-        <h1 class="text-7xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">NEON GEOMETRIC</h1>
-        <p class="text-gray-400 mb-8 tracking-widest text-xs">V15.0</p>
+        <h1 class="text-7xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">NEON KPN</h1>
+        <p class="text-gray-400 mb-8 tracking-widest text-xs">V16.0 (PARTICLES)</p>
         <div class="panel">
             <input id="nick" class="inp" placeholder="Twój Nick" maxlength="15">
             <div id="stats-prev" class="text-xs text-gray-500 mt-2 mb-2">Ładowanie statystyk...</div>
@@ -60,12 +70,12 @@
 
     <div id="s-manual" class="ui-screen">
         <div class="panel" style="max-width:800px; text-align:left;">
-            <h1 class="text-3xl font-black mb-4 text-center">NOWOŚCI V15.0</h1>
+            <h1 class="text-3xl font-black mb-4 text-center">AKTUALIZACJA V16</h1>
             <ul class="list-disc pl-5 my-2 text-gray-300 space-y-2">
-                <li><strong class="text-green-400">OKRĘGOWA ARENA:</strong> Mapa to idealne koło.</li>
-                <li><strong class="text-purple-400">SYMETRIA:</strong> Ściany i krzaki w układzie 9-kąta.</li>
-                <li><strong class="text-yellow-400">TAKTYKA:</strong> Każda baza ma własne zarośla.</li>
-                <li><strong>EMOTKI:</strong> Klawisze 1, 2, 3, 4.</li>
+                <li><strong class="text-yellow-400">CZĄSTECZKI:</strong> Nowy system efektów wizualnych.</li>
+                <li><strong class="text-red-400">GLITCH:</strong> Zombie są teraz cyfrowymi błędami.</li>
+                <li><strong class="text-blue-400">PULS:</strong> Mapa pulsuje w rytm gry.</li>
+                <li><strong class="text-green-400">MAPA:</strong> Układ 9-kątny (Nonagon).</li>
             </ul>
             <button class="btn btn-primary mt-4" onclick="app.screen('s-login')">JAZDA!</button>
         </div>
@@ -101,13 +111,20 @@
                 <div class="w-24 h-32 border-2 border-gray-600 rounded-lg m-2 flex flex-col items-center justify-center cursor-pointer hover:border-white" onclick="app.setType('paper')" id="c-paper"><div class="text-4xl">📄</div><div class="text-blue-400 font-bold">SPEED</div></div>
                 <div class="w-24 h-32 border-2 border-gray-600 rounded-lg m-2 flex flex-col items-center justify-center cursor-pointer hover:border-white" onclick="app.setType('scissors')" id="c-scissors"><div class="text-4xl">✂️</div><div class="text-green-400 font-bold">DPS</div></div>
             </div>
+            
+            <div class="w-full mb-4">
+                <h3 class="text-gray-400 text-sm font-bold mb-2 text-left" id="roster-header">GRACZE W POKOJU:</h3>
+                <div id="lobby-player-list" class="flex flex-col gap-1 max-h-40 overflow-y-auto bg-black/40 p-2 rounded border border-white/10 text-left"></div>
+            </div>
+
             <div id="host-ctrl" class="hidden"><button class="btn btn-primary" onclick="app.start()">START</button></div>
             <div id="wait-msg" class="text-gray-400 animate-pulse mt-4">OCZEKIWANIE NA HOSTA...</div>
         </div>
     </div>
 
     <div id="hud">
-        <div class="absolute top-4 left-4 text-left">
+        <div id="perf">FPS: 0 | PING: 0ms</div>
+        <div class="absolute top-4 left-4 text-left mt-4">
             <div class="text-xs text-gray-400">KDA</div>
             <div id="kda-disp" class="text-lg font-mono">0 / 0</div>
         </div>
@@ -136,6 +153,11 @@
         </div>
         <div id="perk-ui"><h2 class="text-3xl font-black text-yellow-400 drop-shadow-lg mb-4">LEVEL UP!</h2><div id="perk-list"></div></div>
         <canvas id="minimap-c"></canvas>
+
+        <div id="chat-ui">
+            <div id="chat-msgs"></div>
+            <input id="chat-in" placeholder="Napisz wiadomość... (Enter)">
+        </div>
     </div>
 
     <canvas id="cvs"></canvas>
@@ -146,9 +168,17 @@
     <script>
         const EMOTES = ['👍', '👎', '😂', '🤬'];
 
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
         const app = {
             sock: null, input: {x:0, y:0, d:false, s:false}, myId: null, state: {}, cam: {x:0, y:0, z:1.0}, mapSize: 3000, perks: {}, winScore: 1000,
-            floats: [], walls: [], bushes: [], localData: { kills: 0, wins: 0, nick: '' },
+            floats: [], parts: [], walls: [], bushes: [], healSpots: [], localData: { kills: 0, wins: 0, nick: '' },
             frames: 0, lastPing: 0,
             
             init() {
@@ -158,7 +188,9 @@
                 window.addEventListener('resize', ()=>this.resize()); this.resize();
                 this.setupInput(); 
                 setInterval(() => {
-                     document.getElementById('kda-disp').innerText = `${this.state?.p?.find(x=>x.id===this.myId)?.kills||0} / ${this.state?.p?.find(x=>x.id===this.myId)?.deaths||0}`;
+                     document.getElementById('perf').innerText = `FPS: ${this.frames} | PING: ${Date.now() - this.lastPing}ms`;
+                     this.frames = 0; 
+                     if(this.sock) { this.lastPing = Date.now(); this.sock.emit('ping', () => {}); }
                 }, 1000);
                 this.loop();
             },
@@ -192,7 +224,7 @@
                 this.sock.on('roomCreated', id => this.join(id, false));
                 this.sock.on('joined', d => {
                     this.myId = d.id; this.mapSize = d.w; this.perks = d.perks; this.winScore = d.winScore;
-                    this.walls = d.walls || []; this.bushes = d.bushes || [];
+                    this.walls = d.walls || []; this.bushes = d.bushes || []; this.healSpots = d.healSpots || [];
                     this.screen('s-lobby'); if(d.host) { document.getElementById('host-ctrl').classList.remove('hidden'); document.getElementById('wait-msg').classList.add('hidden'); }
                 });
                 this.sock.on('gameStart', () => this.screen('hud'));
@@ -207,6 +239,17 @@
                     this.state = p;
                     const me = p.p.find(x => x.id === this.myId);
                     
+                    const lobbyList = document.getElementById('lobby-player-list');
+                    if(lobbyList && document.getElementById('s-lobby').classList.contains('active')) {
+                        document.getElementById('roster-header').innerText = `GRACZE W POKOJU (${p.p.length}/25):`;
+                        lobbyList.innerHTML = p.p.map(pl => `
+                            <div class="flex justify-between items-center text-xs p-1 ${pl.id === this.myId ? 'text-yellow-400 bg-white/10' : 'text-gray-300'}">
+                                <span>${pl.n}</span>
+                                <span class="uppercase font-bold" style="color:${pl.t==='rock'?'#ef4444':(pl.t==='paper'?'#3b82f6':'#22c55e')}">${pl.t}</span>
+                            </div>
+                        `).join('');
+                    }
+
                     const lb = document.getElementById('leaderboard-list');
                     lb.innerHTML = p.p.filter(x => x.a).sort((a,b)=>b.score-a.score).slice(0,5).map(pl=>`
                         <div class="flex justify-between ${pl.id===this.myId?'text-yellow-400 font-bold':''}">
@@ -222,6 +265,7 @@
                             document.getElementById('bar-hp').style.width = (me.hp/me.mhp)*100 + '%';
                             document.getElementById('bar-xp').style.width = (me.xp/me.nxp)*100 + '%';
                             document.getElementById('score-disp').innerText = me.score + " / " + this.winScore;
+                            document.getElementById('kda-disp').innerText = `${me.kills} / ${me.deaths}`;
                             document.getElementById('xp-text').innerText = `${me.xp} / ${me.nxp} XP`;
                             if(me.pen) this.showPerks(); else document.getElementById('perk-ui').style.display = 'none';
                         }
@@ -233,10 +277,30 @@
                     }
                 });
                 this.sock.on('fx', d => {
+                    if(d.t === 'kill') { 
+                        this.toast(d.msg); 
+                        if(d.msg.includes(this.localData.nick)) { this.localData.kills++; this.saveData(); }
+                    }
                     if(d.t === 'dmg') this.floats.push({x:d.x, y:d.y, t:d.v, c:d.c, l:1.0});
                     if(d.t === 'emote') this.floats.push({x:this.state.p.find(x=>x.id===d.id)?.x, y:this.state.p.find(x=>x.id===d.id)?.y, t:EMOTES[d.e], c:'#fff', l:2.0, font:40});
+                    if(d.t === 'part') {
+                        for(let i=0; i<d.n; i++) {
+                            this.parts.push({
+                                x: d.x, y: d.y, 
+                                dx: (Math.random()-0.5)*10, dy: (Math.random()-0.5)*10, 
+                                c: d.c, l: 30 + Math.random()*20, s: Math.random()*4+2
+                            });
+                        }
+                    }
                 });
-                this.sock.emit('getRooms');
+                
+                this.sock.on('chatMsg', d => {
+                    const c = document.getElementById('chat-msgs');
+                    c.innerHTML += `<div class="mb-1"><span class="font-bold text-cyan-400">${d.n}:</span> ${d.m}</div>`;
+                    c.scrollTop = c.scrollHeight;
+                });
+                
+                this.join('public', false);
             },
             join(id, locked) { const pass = locked ? prompt("Hasło:") : ""; this.sock.emit('join', { roomId: id, nick: document.getElementById('nick').value, pass }); },
             createRoom() { const n = document.getElementById('c-name').value; const p = document.getElementById('c-pass').value; const m = document.getElementById('c-mode').value; if(n) this.sock.emit('createRoom', { name:n, pass:p, mode:m }); },
@@ -251,8 +315,20 @@
             toast(msg) { const t = document.createElement('div'); t.className='toast text-white bg-red-600 px-4 py-2 rounded'; t.innerText=msg; document.getElementById('toasts').appendChild(t); setTimeout(()=>t.remove(), 3000); },
             setupInput() {
                 window.onkeydown = e => { 
+                    if(document.activeElement === document.getElementById('chat-in')) {
+                        if(e.key === 'Enter') { 
+                            const txt = e.target.value; 
+                            if(txt) this.sock.emit('chat', txt); 
+                            e.target.value = ''; document.getElementById('chat-in').style.display = 'none'; 
+                        }
+                        return;
+                    }
                     if(e.key==='w')this.input.y=-1; if(e.key==='s')this.input.y=1; if(e.key==='a')this.input.x=-1; if(e.key==='d')this.input.x=1; if(e.code==='Space')this.input.d=true; if(e.key==='e')this.input.s=true; 
                     if(['1','2','3','4'].includes(e.key)) this.sock.emit('emote', parseInt(e.key)-1);
+                    if(e.key === 'Enter') { 
+                         const cin = document.getElementById('chat-in'); 
+                         cin.style.display = 'block'; cin.focus(); 
+                    }
                 };
                 window.onkeyup = e => { if(e.key==='w'||e.key==='s')this.input.y=0; if(e.key==='a'||e.key==='d')this.input.x=0; if(e.code==='Space')this.input.d=false; if(e.key==='e')this.input.s=false; };
                 const mgr = nipplejs.create({ zone: document.getElementById('touch-l'), mode: 'static', position: {left: '50%', top: '50%'}, color: 'white' });
@@ -263,59 +339,83 @@
             render() {
                 const w = window.innerWidth, h = window.innerHeight; this.ctx.fillStyle = '#0a0a12'; this.ctx.fillRect(0,0,w,h);
                 if(!this.state || !this.state.p) return;
+                this.ctx.save(); this.ctx.translate(w/2, h/2); this.ctx.scale(this.cam.z, this.cam.z); this.ctx.translate(-this.cam.x, -this.cam.y);
                 
+                // --- CLIP MAP AREA (CIRCLE) ---
                 this.ctx.save();
-                this.ctx.translate(w/2, h/2);
-                this.ctx.scale(this.cam.z, this.cam.z);
-                this.ctx.translate(-this.cam.x, -this.cam.y);
-                
-                // Parallax Grid
-                this.ctx.strokeStyle = '#1a1a2e'; this.ctx.lineWidth = 2; this.ctx.beginPath();
+                this.ctx.beginPath(); this.ctx.arc(1500, 1500, 1500, 0, Math.PI*2); 
+                this.ctx.clip(); 
+
+                // Grid with Pulse
+                const pulse = Math.sin(Date.now() / 1000) * 0.1 + 0.9;
+                this.ctx.strokeStyle = `rgba(26, 26, 46, ${pulse})`; this.ctx.lineWidth = 2; this.ctx.beginPath();
                 for(let i=0; i<=3000; i+=250) { this.ctx.moveTo(i,0); this.ctx.lineTo(i,3000); this.ctx.moveTo(0,i); this.ctx.lineTo(3000,i); } this.ctx.stroke();
-
-                // Draw Storm
+                
                 const zr = this.state.st.sz;
-                if(zr < 1500) {
-                    this.ctx.beginPath();
-                    this.ctx.arc(1500, 1500, 1500, 0, Math.PI*2); // Outer map limit
-                    this.ctx.arc(1500, 1500, zr, 0, Math.PI*2, true); // Inner storm hole
-                    this.ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
-                    this.ctx.fill();
+                if(zr < 1500) { 
+                    this.ctx.beginPath(); this.ctx.arc(1500, 1500, 1500, 0, Math.PI*2); this.ctx.arc(1500, 1500, zr, 0, Math.PI*2, true); 
+                    this.ctx.fillStyle = 'rgba(255, 0, 0, 0.2)'; this.ctx.fill(); 
                     
-                    this.ctx.beginPath();
-                    this.ctx.arc(1500, 1500, zr, 0, Math.PI*2);
-                    this.ctx.strokeStyle = '#f00'; 
-                    this.ctx.lineWidth = 5; 
-                    this.ctx.stroke();
+                    // Storm Pulse
+                    this.ctx.beginPath(); this.ctx.arc(1500, 1500, zr, 0, Math.PI*2); 
+                    this.ctx.strokeStyle = `rgba(255, 0, 0, ${pulse})`; this.ctx.lineWidth = 5 + pulse * 5; this.ctx.stroke(); 
                 }
+                
+                this.bushes.forEach(b => { this.ctx.fillStyle = '#004d00'; this.ctx.beginPath(); this.ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); this.ctx.fill(); this.ctx.strokeStyle = '#006600'; this.ctx.lineWidth=5; this.ctx.stroke(); });
 
-                // Map Border
-                this.ctx.beginPath(); this.ctx.arc(1500, 1500, 1500, 0, Math.PI*2); this.ctx.strokeStyle = '#0ff'; this.ctx.lineWidth = 10; this.ctx.stroke();
-
-                // BUSHES
-                this.ctx.fillStyle = '#004d00';
-                this.bushes.forEach(b => { this.ctx.beginPath(); this.ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); this.ctx.fill(); this.ctx.strokeStyle = '#006600'; this.ctx.lineWidth=5; this.ctx.stroke(); });
+                this.healSpots.forEach(h => {
+                    this.ctx.fillStyle = `rgba(0, 255, 0, 0.2)`;
+                    this.ctx.beginPath(); this.ctx.arc(h.x, h.y, h.r + Math.sin(Date.now()/500)*5, 0, Math.PI*2); this.ctx.fill();
+                    this.ctx.fillStyle = '#0f0'; this.ctx.font = '30px Arial'; this.ctx.fillText('+', h.x-10, h.y+10);
+                });
 
                 if(this.state.z) this.state.z.forEach(z => { this.ctx.fillStyle = z.t==='rock'?'#f00':(z.t==='paper'?'#00f':'#0f0'); this.ctx.globalAlpha=0.1; this.ctx.beginPath(); this.ctx.arc(z.x,z.y,150,0,Math.PI*2); this.ctx.fill(); this.ctx.globalAlpha=1; });
                 this.state.o.forEach(o => { this.ctx.fillStyle='#ffd700'; this.ctx.shadowColor='#ffd700'; this.ctx.shadowBlur=10; this.ctx.beginPath(); this.ctx.arc(o[0],o[1],5,0,Math.PI*2); this.ctx.fill(); this.ctx.shadowBlur=0; });
 
-                // WALLS
                 this.ctx.fillStyle = '#222'; this.ctx.strokeStyle = '#0ff'; this.ctx.lineWidth = 3;
-                this.walls.forEach(wa => { this.ctx.shadowBlur = 10; this.ctx.shadowColor = '#0ff'; this.ctx.fillRect(wa.x, wa.y, wa.w, wa.h); this.ctx.strokeRect(wa.x, wa.y, wa.w, wa.h); this.ctx.shadowBlur = 0; });
+                this.walls.forEach(wa => { this.ctx.shadowBlur = 15; this.ctx.shadowColor = '#0ff'; this.ctx.fillRect(wa.x, wa.y, wa.w, wa.h); this.ctx.strokeRect(wa.x, wa.y, wa.w, wa.h); this.ctx.shadowBlur = 0; });
 
-                const drawUnit = (x,y,t,r,inv, my) => {
+                this.ctx.restore(); // End Clip
+                this.ctx.beginPath(); this.ctx.arc(1500, 1500, 1500, 0, Math.PI*2); this.ctx.strokeStyle = '#444'; this.ctx.lineWidth = 10; this.ctx.stroke();
+
+                const drawUnit = (x,y,t,r,inv,my,invuln) => {
                     const c = t==='rock'?'#ef4444':(t==='paper'?'#3b82f6':(t==='zombie'?'#777':'#22c55e'));
-                    this.ctx.fillStyle=c; this.ctx.shadowColor=c; this.ctx.shadowBlur=15; 
+                    this.ctx.fillStyle=c; 
                     if(inv) this.ctx.globalAlpha = my ? 0.5 : 0; 
-                    this.ctx.beginPath(); this.ctx.arc(x,y,r,0,Math.PI*2); this.ctx.fill(); 
-                    this.ctx.globalAlpha = 1; this.ctx.shadowBlur=0;
-                    this.ctx.fillStyle='#fff'; this.ctx.font=`${r}px Arial`; this.ctx.textAlign='center'; this.ctx.textBaseline='middle'; this.ctx.fillText(t==='rock'?'🪨':(t==='paper'?'📄':(t==='zombie'?'🧟':'✂️')),x,y);
+                    if(invuln) this.ctx.globalAlpha = (Date.now()%200 < 100) ? 0.5 : 1; 
+
+                    if(t === 'zombie') {
+                        // GLITCH EFFECT RENDER
+                        this.ctx.save();
+                        this.ctx.translate(x, y);
+                        const jitX = (Math.random()-0.5) * 4;
+                        const jitY = (Math.random()-0.5) * 4;
+                        this.ctx.fillStyle = '#00ff00'; this.ctx.fillRect(-15+jitX, -15, 30, 30);
+                        this.ctx.fillStyle = '#ff00ff'; this.ctx.fillRect(-15-jitX, -15, 30, 30);
+                        this.ctx.fillStyle = '#fff'; this.ctx.fillRect(-15, -15, 30, 30);
+                        this.ctx.restore();
+                    } else {
+                        // PLAYER GLOW
+                        this.ctx.shadowBlur = 10; this.ctx.shadowColor = c;
+                        this.ctx.beginPath(); this.ctx.arc(x,y,r,0,Math.PI*2); this.ctx.fill(); 
+                        this.ctx.shadowBlur = 0;
+                        this.ctx.fillStyle='#fff'; this.ctx.font=`${r}px Arial`; this.ctx.textAlign='center'; this.ctx.textBaseline='middle'; this.ctx.fillText(t==='rock'?'🪨':(t==='paper'?'📄':(t==='zombie'?'':'✂️')),x,y);
+                    }
+                    this.ctx.globalAlpha = 1; 
                 };
-                this.state.m.forEach(m => drawUnit(m.x, m.y, m.t, 18, false, false));
+                
+                // Particles
+                this.parts = this.parts.filter(p => {
+                    p.x += p.dx; p.y += p.dy; p.l--;
+                    this.ctx.fillStyle = p.c; this.ctx.fillRect(p.x, p.y, p.s, p.s);
+                    return p.l > 0;
+                });
+
+                this.state.m.forEach(m => drawUnit(m.x, m.y, m.t, 18, false, false, false));
                 this.state.p.forEach(p => { 
                     if(!p.a || (p.inv && p.id !== this.myId)) return; 
                     if(p.inBush) this.ctx.globalAlpha = 0.6;
-                    drawUnit(p.x,p.y,p.t,28, p.inv, p.id===this.myId); 
+                    drawUnit(p.x,p.y,p.t,28, p.inv, p.id===this.myId, p.invuln); 
                     this.ctx.globalAlpha = 1;
                     this.ctx.fillStyle='#fff'; this.ctx.font='10px Arial'; this.ctx.fillText(p.n,p.x,p.y-40); 
                     this.ctx.fillStyle='#333'; this.ctx.fillRect(p.x-20,p.y-35,40,4); this.ctx.fillStyle='#0f0'; this.ctx.fillRect(p.x-20,p.y-35,40*(p.hp/p.mhp),4); 
@@ -333,14 +433,9 @@
 
                 // Minimap
                 this.mmCtx.clearRect(0,0,150,150); const ms = 150/3000; 
-                this.mmCtx.beginPath(); this.mmCtx.arc(75, 75, 75, 0, Math.PI*2); this.mmCtx.fillStyle='#222'; this.mmCtx.fill();
+                this.mmCtx.fillStyle='#111'; this.mmCtx.beginPath(); this.mmCtx.arc(75, 75, 75, 0, Math.PI*2); this.mmCtx.fill(); // Map BG
                 this.mmCtx.fillStyle = '#444'; this.walls.forEach(w => this.mmCtx.fillRect(w.x*ms, w.y*ms, w.w*ms, w.h*ms));
-                // Storm on minimap
-                if(zr < 1500) {
-                    this.mmCtx.strokeStyle = '#f00'; 
-                    this.mmCtx.beginPath(); this.mmCtx.arc(75, 75, zr*ms, 0, Math.PI*2); this.mmCtx.stroke();
-                }
-
+                if(zr < 1500) { this.mmCtx.strokeStyle = '#f00'; this.mmCtx.beginPath(); this.mmCtx.arc(75, 75, zr*ms, 0, Math.PI*2); this.mmCtx.stroke(); }
                 if(this.state.z) this.state.z.forEach(z => { this.mmCtx.strokeStyle = z.t==='rock'?'#f00':(z.t==='paper'?'#00f':'#0f0'); this.mmCtx.beginPath(); this.mmCtx.arc(z.x*ms, z.y*ms, 150*ms, 0, Math.PI*2); this.mmCtx.stroke(); });
                 if(this.state.p) this.state.p.forEach(p => { if(p.a && (!p.inv || p.id===this.myId)) { this.mmCtx.fillStyle = p.id===this.myId?'#fff':'#f00'; this.mmCtx.beginPath(); this.mmCtx.arc(p.x*ms, p.y*ms, 2, 0, Math.PI*2); this.mmCtx.fill(); }});
             }
