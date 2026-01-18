@@ -1313,9 +1313,14 @@
                     });
                 }
                 setInterval(() => {
-                    document.getElementById('perf').innerText = `FPS: ${this.frames} | PING: ${Date.now() - this.lastPing}ms`;
+                    document.getElementById('perf').innerText = `FPS: ${this.frames} | PING: ${this.currentPing || 0}ms`;
                     this.frames = 0;
-                    if (this.sock) { this.lastPing = Date.now(); this.sock.emit('ping', () => { }); }
+                    if (this.sock) {
+                        const start = Date.now();
+                        this.sock.emit('ping', () => {
+                            this.currentPing = Date.now() - start;
+                        });
+                    }
                 }, 1000);
                 this.loop();
             },

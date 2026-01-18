@@ -749,6 +749,7 @@ io.on('connection', (socket) => {
     socket.on('perk', (pid) => { const p = curRoom?.players[socket.id]; if (p) p.applyPerk(pid); });
     socket.on('emote', (eid) => { const p = curRoom?.players[socket.id]; if (p) { p.emote = eid; p.emoteTimer = 60; io.to(curRoom.id).emit('fx', { t: 'emote', id: p.id, e: eid }); } });
     socket.on('chat', (msg) => { const p = curRoom?.players[socket.id]; if (p && msg && msg.length <= 50) io.to(curRoom.id).emit('chatMsg', { n: p.nick, m: msg }); });
+    socket.on('ping', (cb) => { if (cb) cb(); });
     socket.on('disconnect', () => {
         if (curRoom) {
             delete curRoom.players[socket.id];
