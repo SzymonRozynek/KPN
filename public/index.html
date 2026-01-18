@@ -1354,8 +1354,15 @@
                     this.walls = d.walls || []; this.bushes = d.bushes || []; this.healSpots = d.healSpots || [];
                     this.screen('s-lobby'); if (d.host) { document.getElementById('host-ctrl').classList.remove('hidden'); document.getElementById('wait-msg').classList.add('hidden'); }
                 });
-                this.sock.on('gameStart', () => this.screen('hud'));
+                this.sock.on('gameStart', () => {
+                    this.gameOverShown = false; // Reset flag
+                    this.screen('hud');
+                });
                 this.sock.on('gameOver', d => {
+                    // Prevent showing multiple times
+                    if (this.gameOverShown) return;
+                    this.gameOverShown = true;
+
                     const me = this.state.p?.find(x => x.id === this.myId);
                     const isWinner = d.w === me?.n;
                     if (isWinner) { this.localData.wins++; this.saveData(); }
@@ -1385,7 +1392,12 @@
                     }
                     stats.innerHTML = `Zwycięzca: <span style="color:#ffd700">${d.w.toUpperCase()}</span><br>Twój wynik: ${me?.score || 0} pkt | Zabójstwa: ${me?.kills || 0}`;
 
-                    setTimeout(() => { overlay.style.display = 'none'; this.screen('s-lobby'); }, 6000);
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        this.myPerks = []; // Reset perks display
+                        document.getElementById('active-perks').innerHTML = '';
+                        this.screen('s-lobby');
+                    }, 5000);
                 });
                 this.sock.on('u', p => {
                     this.state = p;
