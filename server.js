@@ -221,7 +221,7 @@ class Player extends Entity {
                 this.cdSkill = this.maxCdSkill;
                 io.to(room.id).emit('fx', { t: 'skill', x: this.x, y: this.y, c: this.type });
                 if (this.type === 'rock') room.aoe(this, 350, 'pull_stun');
-                if (this.type === 'paper') { this.skillActive = s.skillDur; room.spawnDecoy(this); }
+                if (this.type === 'paper') { this.skillActive = CFG.STATS[this.type].skillDur; room.spawnDecoy(this); }
                 if (this.type === 'scissors') room.aoe(this, 200, 'lifesteal');
             }
             if (this.cdSkill > 0) this.cdSkill--;
