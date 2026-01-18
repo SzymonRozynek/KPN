@@ -26,7 +26,7 @@ const CFG = {
     // DANE GENEROWANE PRZEZ PYTHON
     WALLS: [{ x: 2340, y: 1440, w: 120, h: 120 }, { x: 2129, y: 2018, w: 120, h: 120 }, { x: 1596, y: 2326, w: 120, h: 120 }, { x: 990, y: 2219, w: 120, h: 120 }, { x: 594, y: 1747, w: 120, h: 120 }, { x: 594, y: 1132, w: 120, h: 120 }, { x: 989, y: 660, w: 120, h: 120 }, { x: 1596, y: 553, w: 120, h: 120 }, { x: 2129, y: 861, w: 120, h: 120 }],
     BUSHES: [{ x: 2674, y: 1927, r: 130 }, { x: 2125, y: 2582, r: 130 }, { x: 1282, y: 2731, r: 130 }, { x: 542, y: 2303, r: 130 }, { x: 250, y: 1500, r: 130 }, { x: 542, y: 696, r: 130 }, { x: 1282, y: 268, r: 130 }, { x: 2125, y: 417, r: 130 }, { x: 2674, y: 1072, r: 130 }],
-    ZONES: [{ t: 'rock', x: 0.500, y: 0.733 }, { t: 'paper', x: 0.298, y: 0.383 }, { t: 'scissors', x: 0.702, y: 0.383 }],
+    ZONES: [{ t: 'rock', x: 0.500, y: 0.733 }, { t: 'paper', x: 0.298, y: 0.383 }, { t: 'scissors', x: 0.702, y: 0.383 }, { t: 'mud', x: 0.4, y: 0.5 }, { t: 'ice', x: 0.6, y: 0.5 }],
     HEAL_SPOTS: [{ x: 1500, y: 1100, r: 90 }, { x: 1846, y: 1700, r: 90 }, { x: 1153, y: 1700, r: 90 }],
 
     STATS: {
@@ -191,8 +191,16 @@ class Player extends Entity {
         if (this.stun > 0) {
             this.stun--;
         } else {
-            this.dx *= 0.85;
-            this.dy *= 0.85;
+            let friction = 0.85;
+            let zoneSpdMod = 1.0;
+            const zone = room.zones.find(z => Math.hypot(this.x - z.x, this.y - z.y) < CFG.R_ZONE);
+            if (zone) {
+                if (zone.t === 'mud') zoneSpdMod = 0.6;
+                if (zone.t === 'ice') friction = 0.98;
+            }
+
+            this.dx *= friction;
+            this.dy *= friction;
 
             if (this.skillActive > 0) { this.skillActive--; this.invisible = true; }
             else { this.invisible = this.inBush; }
@@ -207,7 +215,7 @@ class Player extends Entity {
             }
 
             // Use calculated speed from applyStats
-            let spd = this.baseSpd || CFG.STATS[this.type].spd;
+            let spd = (this.baseSpd || CFG.STATS[this.type].spd) * zoneSpdMod;
             if (this.skillActive > 0 && this.type === 'paper') spd *= 1.4;
 
             if (this.input.d && this.cdDash <= 0) {
@@ -272,6 +280,8 @@ class Player extends Entity {
         this.move(room);
     }
 }
+
+
 
 class Minion extends Entity {
     constructor(id, type, x, y, ownerId = null) {
@@ -339,6 +349,7 @@ class Room {
         this.walls = CFG.WALLS; this.bushes = CFG.BUSHES;
         this.healSpots = CFG.HEAL_SPOTS;
         this.kothTimer = 0; this.kothZone = { x: 1500, y: 1500, t: 'rock' };
+        this.waitingForHost = this.id !== 'public';
         this.initZones(); this.reset();
     }
 
@@ -390,7 +401,7 @@ class Room {
     }
 
     reset() {
-        this.active = false; this.minions = []; this.orbs = [];
+        this.active = false; this.minions = []; this.orbs = []; this.gameEnding = false;
         this.safeZoneRadius = this.mapRadius; this.grid.clear();
         this.ticks = 0; this.kothTimer = 0; // Reset room timers
         for (let i = 0; i < 100; i++) this.spawnOrb();
@@ -405,10 +416,12 @@ class Room {
         });
         io.to(this.id).emit('gameReset');
 
-        // AUTO-RESTART after 1 second
+        if (this.config.auto === false) this.waitingForHost = true;
+
+        // AUTO-RESTART after 4 seconds (only if not waiting for host)
         setTimeout(() => {
-            if (!this.active) this.start();
-        }, 1000);
+            if (!this.active && !this.waitingForHost) this.start();
+        }, 4000);
     }
 
     spawnOrb() {
@@ -422,6 +435,8 @@ class Room {
         }
         if (safe) this.orbs.push({ x, y });
     }
+
+
 
     spawnBot() {
         if (this.minions.length >= CFG.MAX_BOTS) return;
@@ -600,6 +615,8 @@ class Room {
     }
 
     resolveCombat(winner, loser) {
+
+
         if (winner.type === 'zombie') { loser.takeDamage(10, winner); return; }
         if (loser.type === 'zombie') { loser.takeDamage(20, winner); return; }
 
@@ -660,6 +677,8 @@ class Room {
     spawnDecoy(owner) {
         const m = new Minion(Math.random(), owner.type, owner.x, owner.y, owner.id); m.dx = (Math.random() - 0.5) * 30; m.dy = (Math.random() - 0.5) * 30; this.minions.push(m);
     }
+
+
     handleZones() {
         Object.values(this.players).forEach(p => {
             if (!p.active || p.dead) return;
@@ -670,7 +689,7 @@ class Room {
                     if (this.config.mode === 'koth' && p.type === z.t) {
                         if (this.ticks % 30 === 0) { p.score += 50; p.addXp(20); io.to(this.id).emit('fx', { t: 'dmg', x: p.x, y: p.y, v: 50, c: '#0f0' }); }
                     }
-                    if (p.type !== z.t && this.config.mode !== 'koth') {
+                    if (TYPES.includes(z.t) && p.type !== z.t && this.config.mode !== 'koth') {
                         p.zoneTime = (p.zoneTime || 0) + 1;
                         if (p.zoneTime > 45) {
                             p.type = z.t; p.applyStats(); p.zoneTime = 0; p.invisible = false;
@@ -683,12 +702,14 @@ class Room {
         });
     }
     checkWin() {
+        if (this.gameEnding) return;
         if (Date.now() - this.startTime < 5000) return;
         for (const id in this.players) {
             const p = this.players[id];
             if (p.active && p.score >= CFG.WIN_SCORE) {
+                this.gameEnding = true;
                 p.roomWins++;
-                io.to(this.id).emit('gameOver', { w: p.nick, reason: 'score' });
+                io.to(this.id).emit('gameOver', { w: p.nick, reason: 'score', rw: p.roomWins });
                 setTimeout(() => this.reset(), 5000);
                 return;
             }
@@ -712,7 +733,7 @@ io.on('connection', (socket) => {
     socket.on('createRoom', (d) => {
         if (!d.name) return;
         const id = Math.random().toString(36).substr(2, 6).toUpperCase();
-        rooms[id] = new Room(id, d.name.substring(0, 20), { max: 15, mode: d.mode || 'play', pass: d.pass });
+        rooms[id] = new Room(id, d.name.substring(0, 20), { max: 15, mode: d.mode || 'play', pass: d.pass, auto: d.auto });
         socket.emit('roomCreated', id);
     });
     socket.on('join', (d) => {
@@ -748,8 +769,9 @@ io.on('connection', (socket) => {
         }
     });
     socket.on('setType', (t) => { if (curRoom && !curRoom.active && CFG.STATS[t]) curRoom.players[socket.id].type = t; });
-    socket.on('hostStart', () => { if (curRoom && curRoom.hostId === socket.id && !curRoom.active) curRoom.start(); });
+
     socket.on('input', (d) => { const p = curRoom?.players[socket.id]; if (p) { const len = Math.hypot(d.x, d.y); if (len > 1.01) { d.x /= len; d.y /= len; } p.input = d; } });
+    socket.on('hostStart', () => { if (curRoom && curRoom.hostId === socket.id && !curRoom.active) { curRoom.waitingForHost = false; curRoom.start(); } });
     socket.on('perk', (pid) => { const p = curRoom?.players[socket.id]; if (p) p.applyPerk(pid); });
     socket.on('emote', (eid) => { const p = curRoom?.players[socket.id]; if (p) { p.emote = eid; p.emoteTimer = 60; io.to(curRoom.id).emit('fx', { t: 'emote', id: p.id, e: eid }); } });
     socket.on('chat', (msg) => { const p = curRoom?.players[socket.id]; if (p && msg && msg.length <= 50) io.to(curRoom.id).emit('chatMsg', { n: p.nick, m: msg }); });

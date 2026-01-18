@@ -975,6 +975,32 @@
             }
         }
 
+        /* LOW HP VIGNETTE */
+        #hp-vignette {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 50;
+            background: radial-gradient(circle, transparent 50%, rgba(255, 0, 0, 0.6) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            mix-blend-mode: overlay;
+        }
+
+        #hp-vignette.low {
+            animation: pulseRed 1s infinite alternate;
+        }
+
+        @keyframes pulseRed {
+            from {
+                opacity: 0.3;
+            }
+
+            to {
+                opacity: 0.8;
+            }
+        }
+
         /* VICTORY/DEFEAT OVERLAY */
         #game-over-overlay {
             position: fixed;
@@ -1033,6 +1059,35 @@
             align-items: center;
             justify-content: center;
             backdrop-filter: blur(10px);
+        }
+
+
+
+        #btn-mute {
+            position: fixed;
+            top: 20px;
+            right: 74px;
+            /* Left of fullscreen btn */
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        #btn-mute:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #0ff;
+            transform: scale(1.1);
         }
 
         #btn-fs:hover {
@@ -1168,6 +1223,11 @@
                 <option value="koth">👑 KING OF THE HILL</option>
             </select>
             <input id="c-pass" class="inp" placeholder="🔒 Hasło (opcjonalne)">
+            <div class="flex items-center gap-2 mb-4 justify-center">
+                <input type="checkbox" id="c-auto" class="w-4 h-4 cursor-pointer" checked>
+                <label for="c-auto" class="text-gray-300 text-sm cursor-pointer select-none">Automatycznie zaczynaj
+                    kolejne rundy</label>
+            </div>
             <button class="btn btn-primary" onclick="app.createRoom()">STWÓRZ</button>
             <button class="btn btn-sec" onclick="app.screen('s-list')">ANULUJ</button>
         </div>
@@ -1289,6 +1349,103 @@
             }
         }
 
+        class SoundManager {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.muted = false;
+                this.masterGain = this.ctx.createGain();
+                this.masterGain.gain.value = 0.2; // Default volume
+                this.masterGain.connect(this.ctx.destination);
+            }
+
+            toggleMute() {
+                this.muted = !this.muted;
+                if (this.muted) this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
+                else this.masterGain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                return this.muted;
+            }
+
+            resume() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+            }
+
+            play(type) {
+                if (this.muted) return;
+                this.resume();
+                const t = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+
+                if (type === 'shoot') {
+                    // Pew pew
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(600, t);
+                    osc.frequency.exponentialRampToValueAtTime(100, t + 0.15);
+                    gain.gain.setValueAtTime(0.3, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+                    osc.start(t);
+                    osc.stop(t + 0.15);
+                } else if (type === 'hit') {
+                    // Small thud
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, t);
+                    osc.frequency.linearRampToValueAtTime(50, t + 0.1);
+                    gain.gain.setValueAtTime(0.5, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                    osc.start(t);
+                    osc.stop(t + 0.1);
+                } else if (type === 'kill') {
+                    // Nice chord
+                    this.playTone(440, 'sine', 0.4);
+                    this.playTone(554, 'sine', 0.4); // C#
+                    this.playTone(659, 'sine', 0.4); // E
+                } else if (type === 'level') {
+                    // Ascending arpeggio
+                    this.playTone(523, 'square', 0.1, 0); // C
+                    this.playTone(659, 'square', 0.1, 0.1); // E
+                    this.playTone(784, 'square', 0.1, 0.2); // G
+                    this.playTone(1046, 'square', 0.3, 0.3); // High C
+                } else if (type === 'orb') {
+                    // High blip
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1200, t);
+                    osc.frequency.linearRampToValueAtTime(1800, t + 0.1);
+                    gain.gain.setValueAtTime(0.1, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                    osc.start(t);
+                    osc.stop(t + 0.1);
+                } else if (type === 'dash') {
+                    // Noise-like sweep
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, t);
+                    osc.frequency.exponentialRampToValueAtTime(50, t + 0.3);
+                    gain.gain.setValueAtTime(0.2, t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                    osc.start(t);
+                    osc.stop(t + 0.3);
+                }
+            }
+
+            playTone(freq, type, dur, delay = 0) {
+                const t = this.ctx.currentTime + delay;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, t);
+                gain.gain.setValueAtTime(0.2, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + dur);
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(t);
+                osc.stop(t + dur);
+            }
+        }
+        const sfx = new SoundManager();
+        window.sfx = sfx; // Make global for onclick
+
         const app = {
             sock: null, input: { x: 0, y: 0, d: false, s: false }, myId: null, state: {}, cam: { x: 0, y: 0, z: 1.0 }, mapSize: 3000, perks: {}, winScore: 1000,
             floats: [], parts: [], walls: [], bushes: [], healSpots: [], localData: { kills: 0, wins: 0, nick: '' },
@@ -1395,7 +1552,7 @@
                         title.textContent = 'PRZEGRANA';
                         title.className = 'victory-text lose';
                     }
-                    stats.innerHTML = `Zwycięzca: <span style="color:#ffd700">${d.w.toUpperCase()}</span><br>Twój wynik: ${me?.score || 0} pkt | Zabójstwa: ${me?.kills || 0}`;
+                    stats.innerHTML = `Zwycięzca: <span style="color:#ffd700">${d.w.toUpperCase()}</span><br>Twój wynik: ${me?.score || 0} pkt | Zabójstwa: ${me?.kills || 0} | Wygrałeś: ${d.rw || me?.rw || 0}`;
 
                     setTimeout(() => {
                         overlay.style.display = 'none';
@@ -1472,6 +1629,7 @@
                 this.sock.on('fx', d => {
                     if (d.t === 'kill') {
                         // Kill Feed
+                        sfx.play('kill');
                         this.addKillFeed(d.msg);
                         this.shakeScreen(8);
                         if (d.msg.includes(this.localData.nick)) {
@@ -1486,14 +1644,22 @@
                             }
                         }
                     }
+                    if (d.t === 'skill') sfx.play('shoot');
                     if (d.t === 'dmg') {
+                        if ((typeof d.v === 'string' && d.v.startsWith('+')) || d.v === 10) {
+                            sfx.play('orb');
+                        } else {
+                            sfx.play('hit');
+                        }
                         this.floats.push({ x: d.x, y: d.y, t: d.v, c: d.c, l: 1.0 });
                         // Shake on damage to self
                         const me = this.state.p?.find(x => x.id === this.myId);
-                        if (me && Math.hypot(me.x - d.x, me.y - d.y) < 50) this.shakeScreen(3);
+                        // FIX: Don't shake on healing
+                        if (me && Math.hypot(me.x - d.x, me.y - d.y) < 50 && !((typeof d.v === 'string' && d.v.startsWith('+')) || d.v === 10)) this.shakeScreen(3);
                     }
                     if (d.t === 'emote') this.floats.push({ x: this.state.p.find(x => x.id === d.id)?.x, y: this.state.p.find(x => x.id === d.id)?.y, t: EMOTES[d.e], c: '#fff', l: 2.0, font: 40 });
                     if (d.t === 'part') {
+                        sfx.play('dash');
                         for (let i = 0; i < d.n; i++) {
                             this.parts.push({
                                 x: d.x, y: d.y,
@@ -1515,6 +1681,13 @@
 
                 // Zamiast autojoin, pobieramy listę pokoi
                 this.sock.emit('getRooms');
+
+                this.sock.on('roomCreated', id => {
+                    const nick = document.getElementById('nick').value;
+                    const pass = this.tempPass || "";
+                    this.tempPass = null;
+                    this.sock.emit('join', { roomId: id, nick, pass });
+                });
             },
 
             // NEW: Kill Feed
@@ -1550,7 +1723,7 @@
             },
 
             join(id, locked) { const pass = locked ? prompt("Hasło:") : ""; this.sock.emit('join', { roomId: id, nick: document.getElementById('nick').value, pass }); },
-            createRoom() { const n = document.getElementById('c-name').value; const p = document.getElementById('c-pass').value; const m = document.getElementById('c-mode').value; if (n) this.sock.emit('createRoom', { name: n, pass: p, mode: m }); },
+            createRoom() { const n = document.getElementById('c-name').value; const p = document.getElementById('c-pass').value; const m = document.getElementById('c-mode').value; const a = document.getElementById('c-auto').checked; if (n) { this.tempPass = p; this.sock.emit('createRoom', { name: n, pass: p, mode: m, auto: a }); } },
             screen(id) { document.querySelectorAll('.ui-screen').forEach(e => e.classList.remove('active')); const el = document.getElementById(id); if (el) el.classList.add('active'); const h = document.getElementById('hud'); if (id === 'hud') h.style.display = 'block'; else h.style.display = 'none'; },
             setType(t) { document.querySelectorAll('.class-card').forEach(e => e.classList.remove('sel')); document.getElementById('c-' + t).classList.add('sel'); this.sock.emit('setType', t); },
             start() { this.sock.emit('hostStart'); },
@@ -1627,6 +1800,31 @@
             },
             render() {
                 const ms = 150 / 3000;
+
+                // Moved drawUnit here to avoid scope issues
+                const drawUnit = (x, y, t, r, inv, my, invuln) => {
+                    this.ctx.globalAlpha = 1;
+                    const c = t === 'rock' ? '#ef4444' : (t === 'paper' ? '#3b82f6' : (t === 'zombie' ? '#777' : '#22c55e'));
+                    this.ctx.fillStyle = c;
+                    if (inv) this.ctx.globalAlpha = my ? 0.5 : 0;
+                    if (t === 'zombie') {
+                        this.ctx.fillStyle = '#1a1a1a';
+                        this.ctx.beginPath(); this.ctx.arc(x, y, r, 0, Math.PI * 2); this.ctx.fill();
+                        this.ctx.strokeStyle = '#333'; this.ctx.lineWidth = 2; this.ctx.stroke();
+                        this.ctx.fillStyle = '#f00';
+                        this.ctx.beginPath(); this.ctx.arc(x - 5, y - 5, 3, 0, Math.PI * 2); this.ctx.fill();
+                        this.ctx.beginPath(); this.ctx.arc(x + 5, y - 5, 3, 0, Math.PI * 2); this.ctx.fill();
+                    } else {
+                        this.ctx.shadowBlur = 10; this.ctx.shadowColor = c;
+                        this.ctx.beginPath(); this.ctx.arc(x, y, r, 0, Math.PI * 2); this.ctx.fill();
+                        this.ctx.shadowBlur = 0;
+                        this.ctx.fillStyle = '#fff'; this.ctx.font = `${r}px Arial`; this.ctx.textAlign = 'center'; this.ctx.textBaseline = 'middle'; this.ctx.fillText(t === 'rock' ? '🪨' : (t === 'paper' ? '📄' : (t === 'zombie' ? '' : '✂️')), x, y);
+                    }
+                    if (invuln) {
+                        this.ctx.strokeStyle = '#fff'; this.ctx.lineWidth = 3; this.ctx.beginPath(); this.ctx.arc(x, y, r + 5, 0, Math.PI * 2); this.ctx.stroke();
+                    }
+                    this.ctx.globalAlpha = 1;
+                };
                 this.ctx.globalAlpha = 1;
 
                 const w = window.innerWidth, h = window.innerHeight;
@@ -1646,6 +1844,30 @@
                 this.ctx.fillRect(0, 0, w, h);
 
                 if (!this.state || !this.state.p) return;
+
+                // Camera follow & Low HP Vignette
+                const me = this.state.p.find(x => x.id === this.myId);
+                if (me) {
+                    this.cam.x += (me.x - this.cam.x) * 0.1;
+                    this.cam.y += (me.y - this.cam.y) * 0.1;
+
+                    const vig = document.getElementById('hp-vignette');
+                    if (vig) {
+                        const pct = me.hp / me.mhp;
+                        if (pct <= 0.3) {
+                            vig.style.opacity = 1;
+                            vig.classList.add('low');
+                        } else {
+                            vig.style.opacity = 0;
+                            vig.classList.remove('low');
+                        }
+                    }
+                } else {
+                    this.cam.x += (1500 - this.cam.x) * 0.1;
+                    this.cam.y += (1500 - this.cam.y) * 0.1;
+                    const vig = document.getElementById('hp-vignette');
+                    if (vig) vig.style.opacity = 0;
+                }
 
                 this.ctx.save();
                 this.ctx.translate(w / 2 + shakeX, h / 2 + shakeY);
@@ -1696,8 +1918,11 @@
                 if (this.state.z) {
                     const pulse = Math.sin(Date.now() / 800) * 0.15 + 0.85;
                     this.state.z.forEach(z => {
-                        const color = z.t === 'rock' ? '#ef4444' : (z.t === 'paper' ? '#3b82f6' : '#22c55e');
-                        const emoji = z.t === 'rock' ? '🪨' : (z.t === 'paper' ? '📄' : '✂️');
+                        let color = '#ef4444', emoji = '🪨';
+                        if (z.t === 'paper') { color = '#3b82f6'; emoji = '📄'; }
+                        else if (z.t === 'scissors') { color = '#22c55e'; emoji = '✂️'; }
+                        else if (z.t === 'mud') { color = '#D2691E'; emoji = '💩'; }
+                        else if (z.t === 'ice') { color = '#00BFFF'; emoji = '❄️'; }
 
                         // Zone glow
                         this.ctx.shadowBlur = 30;
@@ -1745,35 +1970,7 @@
                 this.ctx.restore(); // End Clip (Camera transform still active)
                 this.ctx.beginPath(); this.ctx.arc(1500, 1500, 1500, 0, Math.PI * 2); this.ctx.strokeStyle = '#444'; this.ctx.lineWidth = 10; this.ctx.stroke();
 
-                const drawUnit = (x, y, t, r, inv, my, invuln) => {
-                    // Reset Alpha at start of unit draw
-                    this.ctx.globalAlpha = 1;
 
-                    const c = t === 'rock' ? '#ef4444' : (t === 'paper' ? '#3b82f6' : (t === 'zombie' ? '#777' : '#22c55e'));
-                    this.ctx.fillStyle = c;
-
-                    if (inv) this.ctx.globalAlpha = my ? 0.5 : 0;
-                    if (invuln) this.ctx.globalAlpha = (Date.now() % 200 < 100) ? 0.5 : 1;
-
-                    if (t === 'zombie') {
-                        // GLITCH EFFECT RENDER
-                        this.ctx.save();
-                        this.ctx.translate(x, y);
-                        const jitX = (Math.random() - 0.5) * 4;
-                        const jitY = (Math.random() - 0.5) * 4;
-                        this.ctx.fillStyle = '#00ff00'; this.ctx.fillRect(-15 + jitX, -15, 30, 30);
-                        this.ctx.fillStyle = '#ff00ff'; this.ctx.fillRect(-15 - jitX, -15, 30, 30);
-                        this.ctx.fillStyle = '#fff'; this.ctx.fillRect(-15, -15, 30, 30);
-                        this.ctx.restore();
-                    } else {
-                        // PLAYER GLOW
-                        this.ctx.shadowBlur = 10; this.ctx.shadowColor = c;
-                        this.ctx.beginPath(); this.ctx.arc(x, y, r, 0, Math.PI * 2); this.ctx.fill();
-                        this.ctx.shadowBlur = 0;
-                        this.ctx.fillStyle = '#fff'; this.ctx.font = `${r}px Arial`; this.ctx.textAlign = 'center'; this.ctx.textBaseline = 'middle'; this.ctx.fillText(t === 'rock' ? '🪨' : (t === 'paper' ? '📄' : (t === 'zombie' ? '' : '✂️')), x, y);
-                    }
-                    this.ctx.globalAlpha = 1;
-                };
 
                 // Particles
                 this.parts = this.parts.filter(p => {
@@ -1782,6 +1979,8 @@
                     return p.l > 0;
                 });
 
+
+
                 this.state.m.forEach(m => drawUnit(m.x, m.y, m.t, 18, false, false, false));
                 this.state.p.forEach(p => {
                     if (!p.a || (p.inv && p.id !== this.myId)) return;
@@ -1789,7 +1988,16 @@
                     drawUnit(p.x, p.y, p.t, 28, p.inv, p.id === this.myId, p.invuln);
                     this.ctx.globalAlpha = 1;
                     this.ctx.fillStyle = '#fff'; this.ctx.font = '10px Arial'; this.ctx.fillText(p.n, p.x, p.y - 40);
-                    this.ctx.fillStyle = '#333'; this.ctx.fillRect(p.x - 20, p.y - 35, 40, 4); this.ctx.fillStyle = '#0f0'; this.ctx.fillRect(p.x - 20, p.y - 35, 40 * (p.hp / p.mhp), 4);
+
+                    // Delayed Health Bar
+                    if (!this.visuals) this.visuals = {};
+                    if (!this.visuals[p.id]) this.visuals[p.id] = { hp: p.hp };
+                    const v = this.visuals[p.id];
+                    v.hp += (p.hp - v.hp) * 0.1;
+
+                    this.ctx.fillStyle = '#333'; this.ctx.fillRect(p.x - 20, p.y - 35, 40, 4);
+                    this.ctx.fillStyle = '#fff'; this.ctx.fillRect(p.x - 20, p.y - 35, Math.max(0, 40 * (v.hp / p.mhp)), 4);
+                    this.ctx.fillStyle = '#0f0'; this.ctx.fillRect(p.x - 20, p.y - 35, Math.max(0, 40 * (p.hp / p.mhp)), 4);
                 });
 
                 this.floats = this.floats.filter(f => {
@@ -1818,12 +2026,22 @@
                 // -----------------------------------------------
 
                 if (zr < 1500) { this.mmCtx.strokeStyle = '#f00'; this.mmCtx.beginPath(); this.mmCtx.arc(75, 75, zr * ms, 0, Math.PI * 2); this.mmCtx.stroke(); }
-                if (this.state.z) this.state.z.forEach(z => { this.mmCtx.strokeStyle = z.t === 'rock' ? '#f00' : (z.t === 'paper' ? '#00f' : '#0f0'); this.mmCtx.beginPath(); this.mmCtx.arc(z.x * ms, z.y * ms, 150 * ms, 0, Math.PI * 2); this.mmCtx.stroke(); });
+                if (this.state.z) this.state.z.forEach(z => {
+                    let c = '#22c55e';
+                    if (z.t === 'rock') c = '#ef4444';
+                    else if (z.t === 'paper') c = '#3b82f6';
+                    else if (z.t === 'mud') c = '#D2691E';
+                    else if (z.t === 'ice') c = '#00BFFF';
+                    this.mmCtx.strokeStyle = c; this.mmCtx.lineWidth = 1; this.mmCtx.beginPath(); this.mmCtx.arc(z.x * ms, z.y * ms, 150 * ms, 0, Math.PI * 2); this.mmCtx.stroke();
+                });
                 if (this.state.p) this.state.p.forEach(p => { if (p.a && (!p.inv || p.id === this.myId)) { this.mmCtx.fillStyle = p.id === this.myId ? '#fff' : '#f00'; this.mmCtx.beginPath(); this.mmCtx.arc(p.x * ms, p.y * ms, 2, 0, Math.PI * 2); this.mmCtx.fill(); } });
             }
         };
         window.onload = () => app.init();
     </script>
+    <div id="hp-vignette"></div>
+    <div id="btn-fs" onclick="toggleFullScreen()">⛶</div>
+    <div id="btn-mute" onclick="sfx.toggleMute() ? this.innerText='🔇' : this.innerText='🔊'">🔊</div>
 </body>
 
 </html>
