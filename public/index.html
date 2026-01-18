@@ -1552,7 +1552,21 @@
                         title.textContent = 'PRZEGRANA';
                         title.className = 'victory-text lose';
                     }
-                    stats.innerHTML = `Zwycięzca: <span style="color:#ffd700">${d.w.toUpperCase()}</span><br>Twój wynik: ${me?.score || 0} pkt | Zabójstwa: ${me?.kills || 0} | Wygrałeś: ${d.rw || me?.rw || 0}`;
+                    stats.innerHTML = `
+                        <div class="mt-2 text-lg">Zwycięzca: <span style="color:#ffd700; font-weight:bold;">${d.w.toUpperCase()}</span></div>
+                        <div style="margin: 15px 0; border-top:1px solid rgba(255,255,255,0.2); width:100%;"></div>
+                        <div style="display:flex; justify-content:center; gap:30px; margin-bottom:10px;">
+                            <div style="text-align:center;">
+                                <div style="font-size:0.8rem; color:#aaa;">POKONANI WROGOWIE</div>
+                                <div style="font-size:1.5rem; color:#ef4444; font-weight:bold;">${me?.kills || 0}</div>
+                            </div>
+                            <div style="text-align:center;">
+                                <div style="font-size:0.8rem; color:#aaa;">WYGRANE RUNDY</div>
+                                <div style="font-size:1.5rem; color:#eab308; font-weight:bold;">${d.rw || me?.rw || 0}</div>
+                            </div>
+                        </div>
+                        <div style="font-size:0.9rem; color:#0ff; margin-top:5px;">Wynik punktowy: ${me?.score || 0}</div>
+                    `;
 
                     setTimeout(() => {
                         overlay.style.display = 'none';
