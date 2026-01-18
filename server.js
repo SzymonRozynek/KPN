@@ -393,7 +393,12 @@ class Room {
         this.active = false; this.minions = []; this.orbs = [];
         this.safeZoneRadius = this.mapRadius; this.grid.clear();
         for (let i = 0; i < 100; i++) this.spawnOrb();
-        Object.values(this.players).forEach(p => { p.active = false; p.score = 0; p.kills = 0; p.deaths = 0; p.lvl = 1; p.xp = 0; p.perks = []; p.hp = p.maxHp; p.invisible = false; });
+        Object.values(this.players).forEach(p => {
+            p.active = false; p.score = 0; p.kills = 0; p.deaths = 0;
+            p.lvl = 1; p.xp = 0; p.perks = []; p.hp = p.maxHp;
+            p.invisible = false; p.stun = 0; p.dx = 0; p.dy = 0;
+            p.dead = false; p.pendingPerk = false;
+        });
         io.to(this.id).emit('gameReset');
     }
 
@@ -445,6 +450,7 @@ class Room {
         this.initZones();
         Object.values(this.players).forEach(p => {
             p.active = true; p.invisible = false;
+            p.stun = 0; p.dx = 0; p.dy = 0; p.dead = false; // Reset movement
             let tx, ty;
             if (this.config.mode === 'koth') {
                 const a = Math.random() * Math.PI * 2; tx = 1500 + Math.cos(a) * 1200; ty = 1500 + Math.sin(a) * 1200;
