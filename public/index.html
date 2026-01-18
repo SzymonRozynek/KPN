@@ -1180,17 +1180,17 @@
                 <div class="class-card" onclick="app.setType('rock')" id="c-rock">
                     <div class="text-5xl mb-2">🪨</div>
                     <div class="text-red-400 font-bold text-lg">TANK</div>
-                    <div class="text-xs text-gray-500 mt-1">220 HP</div>
+                    <div class="text-xs text-gray-500 mt-1">200 HP | Thorns</div>
                 </div>
                 <div class="class-card" onclick="app.setType('paper')" id="c-paper">
                     <div class="text-5xl mb-2">📄</div>
                     <div class="text-blue-400 font-bold text-lg">SPEED</div>
-                    <div class="text-xs text-gray-500 mt-1">130 HP</div>
+                    <div class="text-xs text-gray-500 mt-1">140 HP | Regen</div>
                 </div>
                 <div class="class-card" onclick="app.setType('scissors')" id="c-scissors">
                     <div class="text-5xl mb-2">✂️</div>
                     <div class="text-green-400 font-bold text-lg">DPS</div>
-                    <div class="text-xs text-gray-500 mt-1">160 HP</div>
+                    <div class="text-xs text-gray-500 mt-1">150 HP | Crit</div>
                 </div>
             </div>
 
@@ -1236,6 +1236,10 @@
         </div>
         <div class="absolute bottom-[28px] left-1/2 -translate-x-1/2 text-[10px] text-gray-400" id="xp-text"></div>
 
+        <!-- Active Perks Display -->
+        <div id="active-perks" style="position:absolute; top:80px; left:20px; display:flex; gap:8px; font-size:1.5rem;">
+        </div>
+
         <div id="cooldowns-pc" class="hidden md:flex">
             <div id="cd-dash-pc" class="cd-icon">⚡<div class="cd-fill" id="fill-dash"></div>
                 <div class="text-[10px] absolute bottom-1 z-10">SPC</div>
@@ -1258,7 +1262,7 @@
 
         <div id="perk-ui">
             <h2>⬆️ LEVEL UP! ⬆️</h2>
-            <p style="color:#0ff; margin-bottom:20px; font-size:1.2rem; font-weight:bold;">Naciśnij 1-4 aby wybrać:</p>
+            <p style="color:#0ff; margin-bottom:20px; font-size:1.2rem; font-weight:bold;">Naciśnij 1-8 aby wybrać:</p>
             <div id="perk-list"></div>
         </div>
         <canvas id="minimap-c" width="150" height="150"></canvas>
@@ -1415,6 +1419,16 @@
                             document.getElementById('score-disp').innerText = me.score + " / " + this.winScore;
                             document.getElementById('kda-disp').innerText = `${me.kills} / ${me.deaths}`;
                             document.getElementById('xp-text').innerText = `${me.xp} / ${me.nxp} XP`;
+
+                            // Store my perks for filtering
+                            this.myPerks = me.perks || [];
+
+                            // Display active perks
+                            const perkIcons = { vamp: '🧛', glass: '💎', tank: '🛡️', speed: '⚡', regen: '💚', crit: '🎯', dodge: '🌀', magnet: '🧲' };
+                            document.getElementById('active-perks').innerHTML = this.myPerks.map(p =>
+                                `<span title="${p}" style="background:rgba(0,0,0,0.5);padding:5px;border-radius:8px;border:1px solid #0ff;">${perkIcons[p] || '✨'}</span>`
+                            ).join('');
+
                             if (me.pen) this.showPerks(); else document.getElementById('perk-ui').style.display = 'none';
 
                             // UPDATE COOLDOWNS
@@ -1526,9 +1540,13 @@
             showPerks() {
                 const l = document.getElementById('perk-list');
                 l.innerHTML = '';
-                const icons = { vamp: '🧛', glass: '💎', tank: '🛡️', speed: '⚡' };
+                // All 8 perk icons
+                const icons = { vamp: '🧛', glass: '💎', tank: '🛡️', speed: '⚡', regen: '💚', crit: '🎯', dodge: '🌀', magnet: '🧲' };
                 let idx = 0;
-                for (let k in this.perks) {
+                const ownedPerks = this.myPerks || [];
+                const availablePerks = Object.keys(this.perks).filter(k => !ownedPerks.includes(k));
+
+                for (let k of availablePerks) {
                     const icon = icons[k] || '✨';
                     idx++;
                     l.innerHTML += `<div class="perk-opt" data-perk="${k}" onclick="app.pickPerk('${k}')" ontouchend="app.pickPerk('${k}'); event.preventDefault();">
@@ -1538,7 +1556,7 @@
                         <div class="text-xs text-gray-400 mt-2">${this.perks[k].d}</div>
                     </div>`;
                 }
-                this.perkKeys = Object.keys(this.perks); // Store perk keys for keyboard selection
+                this.perkKeys = availablePerks; // Store available perk keys for keyboard selection
                 document.getElementById('perk-ui').style.display = 'block';
             },
             pickPerk(pid) { this.sock.emit('perk', pid); document.getElementById('perk-ui').style.display = 'none'; },
@@ -1560,8 +1578,8 @@
                         return;
                     }
 
-                    // PERK SELECTION with 1-4 keys
-                    if (['1', '2', '3', '4'].includes(e.key) && document.getElementById('perk-ui').style.display === 'block') {
+                    // PERK SELECTION with 1-8 keys
+                    if (['1', '2', '3', '4', '5', '6', '7', '8'].includes(e.key) && document.getElementById('perk-ui').style.display === 'block') {
                         const idx = parseInt(e.key) - 1;
                         if (this.perkKeys && this.perkKeys[idx]) {
                             this.pickPerk(this.perkKeys[idx]);
