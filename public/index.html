@@ -425,6 +425,266 @@
             }
         }
 
+        /* ============ MOBILE UI/UX IMPROVEMENTS ============ */
+        @media (max-width: 768px) {
+
+            /* Login Screen */
+            .game-title {
+                font-size: 2.8rem !important;
+                letter-spacing: 2px;
+            }
+
+            .panel {
+                padding: 1.5rem;
+                margin: 0 15px;
+                max-width: calc(100% - 30px);
+            }
+
+            .btn {
+                padding: 16px;
+                font-size: 1rem;
+            }
+
+            .inp {
+                padding: 14px;
+                font-size: 1rem;
+            }
+
+            /* Class Selection */
+            .class-card {
+                width: 85px;
+                height: 120px;
+                margin: 0 8px;
+            }
+
+            .class-card .text-5xl {
+                font-size: 2.5rem;
+            }
+
+            /* HUD Elements */
+            .hud-bar-c {
+                width: 200px !important;
+            }
+
+            #bar-xp-c {
+                width: 160px !important;
+            }
+
+            #score-disp {
+                font-size: 1.5rem !important;
+            }
+
+            #xp-text {
+                font-size: 9px !important;
+            }
+
+            /* Leaderboard - hide on mobile */
+            #leaderboard-panel {
+                display: none !important;
+            }
+
+            /* KDA Display */
+            #kda-disp {
+                font-size: 0.9rem;
+            }
+
+            /* Chat - smaller on mobile */
+            #chat-ui {
+                width: 200px;
+                height: 120px;
+                bottom: 10px;
+                left: 10px;
+            }
+
+            #chat-msgs {
+                font-size: 10px;
+            }
+
+            /* Minimap - smaller */
+            #minimap-c {
+                width: 100px !important;
+                height: 100px !important;
+                bottom: 15px;
+                right: 15px;
+            }
+
+            /* Skill buttons - larger for touch */
+            #touch-r {
+                bottom: 130px;
+                right: 15px;
+                gap: 12px;
+            }
+
+            .skill-btn {
+                width: 70px !important;
+                height: 70px !important;
+                font-size: 28px !important;
+            }
+
+            /* Touch joystick zone */
+            #touch-l {
+                bottom: 30px;
+                left: 20px;
+                width: 120px;
+                height: 120px;
+            }
+
+            /* Perk Selection - Mobile Optimized */
+            #perk-ui {
+                top: 5%;
+                padding: 0 10px;
+            }
+
+            #perk-ui h2 {
+                font-size: 1.8rem !important;
+                margin-bottom: 10px !important;
+            }
+
+            #perk-ui p {
+                font-size: 1rem !important;
+                margin-bottom: 15px !important;
+            }
+
+            .perk-opt {
+                width: 140px !important;
+                padding: 15px 12px !important;
+                margin: 8px !important;
+                border-radius: 14px;
+            }
+
+            .perk-icon {
+                font-size: 2rem !important;
+            }
+
+            .perk-opt .text-lg {
+                font-size: 0.9rem !important;
+            }
+
+            .perk-opt .text-xs {
+                font-size: 0.65rem !important;
+            }
+
+            /* Victory/Defeat */
+            .victory-text {
+                font-size: 2.5rem !important;
+            }
+
+            #victory-stats {
+                font-size: 1rem !important;
+            }
+
+            /* Kill Feed - smaller */
+            #kill-feed {
+                width: 200px;
+                top: 50px;
+                right: 10px;
+            }
+
+            .kill-item {
+                padding: 6px 10px;
+                font-size: 10px;
+            }
+
+            /* Storm warning */
+            #warn-sing {
+                font-size: 1rem !important;
+            }
+        }
+
+        /* Extra small screens (phones in portrait) */
+        @media (max-width: 480px) {
+            .game-title {
+                font-size: 2.2rem !important;
+            }
+
+            .panel {
+                padding: 1.2rem;
+            }
+
+            .class-card {
+                width: 70px;
+                height: 100px;
+                margin: 0 5px;
+            }
+
+            .class-card .text-5xl {
+                font-size: 2rem;
+            }
+
+            .class-card .text-lg {
+                font-size: 0.8rem;
+            }
+
+            .hud-bar-c {
+                width: 160px !important;
+            }
+
+            #bar-xp-c {
+                width: 130px !important;
+            }
+
+            #minimap-c {
+                width: 80px !important;
+                height: 80px !important;
+            }
+
+            .skill-btn {
+                width: 60px !important;
+                height: 60px !important;
+            }
+
+            #touch-r {
+                bottom: 110px;
+                right: 10px;
+            }
+
+            .perk-opt {
+                width: 120px !important;
+                padding: 12px 10px !important;
+            }
+
+            #chat-ui {
+                display: none;
+            }
+
+            /* Hide chat on very small screens */
+        }
+
+        /* Landscape mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            #perk-ui {
+                top: 2%;
+            }
+
+            #perk-ui h2 {
+                font-size: 1.5rem !important;
+                margin-bottom: 5px !important;
+            }
+
+            .perk-opt {
+                width: 130px !important;
+                padding: 10px !important;
+                margin: 5px !important;
+            }
+
+            .perk-icon {
+                font-size: 1.5rem !important;
+                margin-bottom: 5px !important;
+            }
+
+            .hud-bar-c {
+                bottom: 40px !important;
+            }
+
+            #bar-xp-c {
+                bottom: 28px !important;
+            }
+
+            #xp-text {
+                bottom: 15px !important;
+            }
+        }
+
         /* LEVEL UP / PERK SELECTION - REDESIGNED */
         #perk-ui {
             position: absolute;
@@ -1271,7 +1531,7 @@
                 for (let k in this.perks) {
                     const icon = icons[k] || '✨';
                     idx++;
-                    l.innerHTML += `<div class="perk-opt" data-perk="${k}">
+                    l.innerHTML += `<div class="perk-opt" data-perk="${k}" onclick="app.pickPerk('${k}')" ontouchend="app.pickPerk('${k}'); event.preventDefault();">
                         <div style="position:absolute;top:8px;left:12px;font-size:1.5rem;color:#ffd700;font-weight:900;">${idx}</div>
                         <span class="perk-icon">${icon}</span>
                         <div class="font-bold text-cyan-300 text-lg">${this.perks[k].n}</div>
