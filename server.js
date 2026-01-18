@@ -400,6 +400,11 @@ class Room {
             p.dead = false; p.pendingPerk = false;
         });
         io.to(this.id).emit('gameReset');
+
+        // AUTO-RESTART after 1 second
+        setTimeout(() => {
+            if (!this.active) this.start();
+        }, 1000);
     }
 
     spawnOrb() {
