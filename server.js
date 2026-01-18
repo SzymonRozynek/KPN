@@ -392,12 +392,16 @@ class Room {
     reset() {
         this.active = false; this.minions = []; this.orbs = [];
         this.safeZoneRadius = this.mapRadius; this.grid.clear();
+        this.ticks = 0; this.kothTimer = 0; // Reset room timers
         for (let i = 0; i < 100; i++) this.spawnOrb();
         Object.values(this.players).forEach(p => {
             p.active = false; p.score = 0; p.kills = 0; p.deaths = 0;
-            p.lvl = 1; p.xp = 0; p.perks = []; p.hp = p.maxHp;
+            p.lvl = 1; p.xp = 0; p.nextXp = 50; p.perks = [];
+            p.applyStats(); // Reset stats to base (removes perk mods)
+            p.hp = p.maxHp;
             p.invisible = false; p.stun = 0; p.dx = 0; p.dy = 0;
             p.dead = false; p.pendingPerk = false;
+            p.cdDash = 0; p.cdSkill = 0; p.skillActive = 0; p.emoteTimer = 0;
         });
         io.to(this.id).emit('gameReset');
 
